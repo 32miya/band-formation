@@ -129,6 +129,8 @@ canvas#hw{display:block;width:100%;}
   justify-content:center;flex-direction:column;gap:2px;line-height:1;}
 .btn .bl{font-size:.5rem;font-weight:700;opacity:.7;}
 .btn:active,.btn.pressed{transform:scale(.85);filter:brightness(1.6);}
+.btn.teacher-flash{transform:scale(.88)!important;filter:brightness(2.4) saturate(1.5)!important;
+  box-shadow:0 0 28px rgba(255,255,255,.9)!important;transition:none!important;}
 #b0{background:#C89000;color:#1A0A00;box-shadow:0 4px 16px rgba(255,209,102,.7);}
 #b1{background:#1a7a3a;color:#DFFFEC;box-shadow:0 4px 16px rgba(107,255,138,.5);}
 #b2{background:#1a50c0;color:#DDEEFF;box-shadow:0 4px 16px rgba(68,170,255,.5);}
@@ -157,11 +159,15 @@ canvas#hw{display:block;width:100%;}
 #result-content{position:relative;z-index:1;display:flex;flex-direction:column;
   align-items:center;width:100%;max-width:400px;gap:10px;padding-top:8px;}
 
-/* キャラ表示 */
-#result-char-sprite{width:135px;height:220px;background-size:540px 220px;
+/* キャラ表示カード */
+#result-char-card{
+  background:linear-gradient(180deg,#c090f8 0%,#f0d0ff 50%,#fff8f0 100%);
+  border-radius:20px;padding:8px 12px 0;
+  box-shadow:0 0 30px rgba(200,144,248,.5);
+  overflow:hidden;display:inline-block;}
+#result-char-sprite{width:135px;height:240px;background-size:540px 360px;
   background-repeat:no-repeat;background-position:0 0;
-  mix-blend-mode:multiply;margin:0 auto;
-  filter:drop-shadow(0 0 20px rgba(255,220,100,.8));
+  mix-blend-mode:multiply;display:block;
   clip-path:inset(0 5px 0 0);}
 @keyframes rc-enter{0%{transform:scale(0.3) translateY(40px);opacity:0}
   60%{transform:scale(1.15) translateY(-8px);opacity:1}
@@ -320,7 +326,7 @@ canvas#hw{display:block;width:100%;}
   <canvas id="result-particles"></canvas>
   <div id="result-bg"></div>
   <div id="result-content">
-    <div id="result-char-sprite" class="s2"></div>
+    <div id="result-char-card"><div id="result-char-sprite" class="s2"></div></div>
     <div id="result-rank-wrap">
       <span id="result-rank-emoji">🌟</span>
       <h2 id="result-rank">クール！</h2>
@@ -712,12 +718,18 @@ function scheduleSong(){
     if(t>=actx.currentTime-.01) playShamisen(t,m.f,.13);
     melodyPtr++;
   }
-  // 先生ノート自動演奏
+  // 先生ノート自動演奏＋ボタンフラッシュ
   const songT=actx.currentTime-songStart;
   notes.forEach(n=>{
     if(n.isTeacher&&!n.autoPlayed&&n.time<songT+AHEAD){
       const t=songStart+n.time;if(t>=actx.currentTime-.01)playHitVoice(t,n.lane);
       n.autoPlayed=true;
+      // ヒットタイミングにボタンを光らせる
+      const delay=Math.max(0,(t-actx.currentTime)*1000);
+      setTimeout(()=>{
+        const btn=document.querySelector(`.btn[data-lane="${n.lane}"]`);
+        if(btn){btn.classList.add('teacher-flash');setTimeout(()=>btn.classList.remove('teacher-flash'),220);}
+      },delay);
     }
   });
   if(songNow>=SONG_DUR){endSong();return;}
@@ -764,15 +776,15 @@ function buildPhases(){
   const s=curSong();
   const intro=`♪ ${s.title} ♪\nステージ${s.stage} — 曲${s.idx+1}`;
   return[
-    {start:0, end:16,type:'intro',  label:'♪ イントロ ♪',      lyrics:intro},
-    {start:16,end:24,type:'teacher',label:'♪ 先生フェーズ ♪', lyrics:s.lyrics[0]},
-    {start:24,end:32,type:'player', label:'→ あなたの番！ ←',  lyrics:'繰り返せ！'},
-    {start:32,end:40,type:'teacher',label:'♪ 先生フェーズ ♪', lyrics:s.lyrics[1]},
-    {start:40,end:48,type:'player', label:'→ あなたの番！ ←',  lyrics:'繰り返せ！'},
-    {start:48,end:56,type:'teacher',label:'♪ 先生フェーズ ♪', lyrics:s.lyrics[2]},
-    {start:56,end:64,type:'player', label:'→ あなたの番！ ←',  lyrics:'繰り返せ！'},
-    {start:64,end:72,type:'teacher',label:'♪ 先生フェーズ ♪', lyrics:s.lyrics[3]},
-    {start:72,end:80,type:'player', label:'→ ラスト！全力！ ←', lyrics:'最後！全力で！'},
+    {start:0, end:16,type:'intro',  label:'♪ イントロ — 先生の動きを見よう！',    lyrics:intro},
+    {start:16,end:24,type:'teacher',label:'👀 先生が見本！ボタンの光る順番を覚えろ！',lyrics:s.lyrics[0]},
+    {start:24,end:32,type:'player', label:'👆 あなたの番！ TAP ノーツを光る線でタップ！',lyrics:'同じ順番でタップ！'},
+    {start:32,end:40,type:'teacher',label:'👀 先生が見本！ボタンの光る順番を覚えろ！',lyrics:s.lyrics[1]},
+    {start:40,end:48,type:'player', label:'👆 あなたの番！ TAP ノーツを光る線でタップ！',lyrics:'同じ順番でタップ！'},
+    {start:48,end:56,type:'teacher',label:'👀 先生が見本！ボタンの光る順番を覚えろ！',lyrics:s.lyrics[2]},
+    {start:56,end:64,type:'player', label:'👆 あなたの番！ TAP ノーツを光る線でタップ！',lyrics:'同じ順番でタップ！'},
+    {start:64,end:72,type:'teacher',label:'👀 先生が見本！ボタンの光る順番を覚えろ！',lyrics:s.lyrics[3]},
+    {start:72,end:80,type:'player', label:'🔥 ラスト！全力でタップ！！',              lyrics:'ラスト！全力で！'},
   ];
 }
 let PHASES=[];
@@ -820,23 +832,28 @@ function drawHighway(st){
     const y=n.lane*LH,col=LANE_COLORS[n.lane];
     c2d.save();
     if(n.isTeacher){
-      // 先生ノート：太枠＋半透明塗り
-      c2d.shadowColor=col;c2d.shadowBlur=14;
-      c2d.strokeStyle=col;c2d.lineWidth=3;
-      c2d.strokeRect(x-NOTE_W/2,y+2,NOTE_W,LH-4);
-      c2d.fillStyle=col.replace('#','rgba(').replace(/(..)(..)(..)$/,(_,r,g,b)=>`${parseInt(r,16)},${parseInt(g,16)},${parseInt(b,16)},.25)`);
-      c2d.fillRect(x-NOTE_W/2,y+2,NOTE_W,LH-4);
-      c2d.shadowBlur=0;c2d.fillStyle='#fff';c2d.font='bold 15px Arial';c2d.textAlign='center';
-      c2d.fillText(LANE_LABELS[n.lane],x,y+LH*.68);
+      // 先生ノート：点線枠＋半透明＋「見本」ラベル
+      c2d.shadowColor=col;c2d.shadowBlur=8;
+      c2d.strokeStyle=col;c2d.lineWidth=2;c2d.setLineDash([4,3]);
+      c2d.strokeRect(x-NOTE_W/2,y+2,NOTE_W,LH-4);c2d.setLineDash([]);
+      c2d.fillStyle=`rgba(255,255,255,.12)`;c2d.fillRect(x-NOTE_W/2,y+2,NOTE_W,LH-4);
+      c2d.shadowBlur=0;c2d.fillStyle='rgba(255,255,255,.7)';
+      c2d.font='bold 9px Arial';c2d.textAlign='center';
+      c2d.fillText('見本',x,y+LH*.45);
+      c2d.fillStyle=col;c2d.font='bold 13px Arial';
+      c2d.fillText(LANE_LABELS[n.lane],x,y+LH*.78);
     } else {
-      // プレイヤーノート：塗りつぶし＋白枠＋強めグロー
-      c2d.shadowColor=col;c2d.shadowBlur=22;
+      // プレイヤーノート：塗りつぶし＋白枠＋強めグロー＋「TAP」ラベル
+      c2d.shadowColor=col;c2d.shadowBlur=24;
       c2d.fillStyle=col;c2d.fillRect(x-NOTE_W/2,y+2,NOTE_W,LH-4);
       c2d.shadowBlur=0;
-      c2d.strokeStyle='rgba(255,255,255,.85)';c2d.lineWidth=2;
+      c2d.strokeStyle='rgba(255,255,255,.9)';c2d.lineWidth=2.5;
       c2d.strokeRect(x-NOTE_W/2,y+2,NOTE_W,LH-4);
-      c2d.fillStyle='#000';c2d.font='bold 15px Arial';c2d.textAlign='center';
-      c2d.fillText(LANE_LABELS[n.lane],x,y+LH*.68);
+      c2d.fillStyle='rgba(0,0,0,.85)';
+      c2d.font='bold 9px Arial';c2d.textAlign='center';
+      c2d.fillText('TAP',x,y+LH*.45);
+      c2d.font='bold 13px Arial';
+      c2d.fillText(LANE_LABELS[n.lane],x,y+LH*.78);
     }
     c2d.restore();
   });
