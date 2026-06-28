@@ -1,0 +1,952 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=no,viewport-fit=cover">
+<title>ラップバトル！</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;user-select:none;-webkit-tap-highlight-color:transparent;touch-action:manipulation;}
+html,body{width:100%;height:100%;overflow:hidden;background:#1a0a2e;font-family:'Arial Black','Impact',sans-serif;color:#fff;}
+
+/* ══ 共通 ══ */
+.screen{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;
+  justify-content:flex-start;gap:12px;padding:env(safe-area-inset-top) 16px 16px;
+  overflow-y:auto;z-index:100;}
+.hidden{display:none!important;}
+.sec-label{font-size:.75rem;font-weight:900;color:#FFD166;letter-spacing:.15em;align-self:flex-start;}
+
+/* ══ スタート画面 ══ */
+#start{background:linear-gradient(160deg,#3a1a6e,#1a0a2e);}
+#start h1{font-size:clamp(1.8rem,7vw,2.6rem);color:#FFD166;text-align:center;
+  text-shadow:0 0 30px rgba(255,209,102,.8);margin-top:12px;}
+#start .sub{color:#9AB;font-size:.85rem;text-align:center;}
+#char-row{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;width:100%;max-width:360px;}
+.char-card{display:flex;flex-direction:column;align-items:center;gap:6px;
+  background:#fff;border-radius:14px;padding:8px 8px 6px;
+  border:4px solid transparent;cursor:pointer;
+  transition:border-color .15s,transform .12s,box-shadow .15s;
+  box-shadow:0 2px 10px rgba(0,0,0,.3);}
+.char-card.selected{border-color:#FFD166;transform:scale(1.08);box-shadow:0 0 22px rgba(255,209,102,.8);}
+.char-card-img{width:50px;height:133px;background-size:200px 133px;background-repeat:no-repeat;
+  background-position:0 0;mix-blend-mode:multiply;}
+#prev-rabbit{background-image:url('assets/rabbit.jpeg');}
+#prev-fox{background-image:url('assets/fox.jpeg');}
+#prev-panda{background-image:url('assets/panda.jpeg');}
+#prev-rhino{background-image:url('assets/rhino.jpeg');}
+#prev-husky{background-image:url('assets/husky.jpeg');}
+#prev-horse{background-image:url('assets/horse.jpeg');}
+.char-name{font-size:.8rem;font-weight:900;color:#333;}
+#diff-row{display:flex;gap:8px;justify-content:center;width:100%;}
+.diff-btn{flex:1;max-width:110px;padding:8px 4px;border-radius:12px;border:3px solid transparent;
+  background:rgba(255,255,255,.08);color:#fff;font-size:.8rem;font-weight:900;
+  cursor:pointer;text-align:center;line-height:1.5;
+  transition:border-color .15s,transform .12s,box-shadow .15s;}
+.diff-btn.selected{border-color:#6BFF8A;transform:scale(1.06);box-shadow:0 0 16px rgba(107,255,138,.7);}
+#vol-row{display:flex;align-items:center;gap:10px;width:100%;}
+#vol-row span{font-size:.85rem;color:#9AB;}
+#vol-slider{flex:1;accent-color:#FFD166;cursor:pointer;}
+#start-btn{padding:14px 50px;background:linear-gradient(135deg,#FF6BAD,#FFD166);
+  color:#1A0008;border:none;border-radius:60px;font-size:1.1rem;font-weight:900;
+  cursor:pointer;letter-spacing:.1em;box-shadow:0 0 36px rgba(255,100,170,.5);}
+
+/* ══ ステージ選択 ══ */
+#stage-select{background:linear-gradient(160deg,#0a2a4e,#1a0a2e);}
+#stage-select h2{font-size:1.6rem;color:#FFD166;margin-top:10px;}
+#stage-list{width:100%;display:flex;flex-direction:column;gap:10px;}
+.stage-card{display:flex;align-items:center;gap:12px;padding:12px 14px;
+  border-radius:14px;border:2px solid rgba(255,255,255,.15);
+  background:rgba(255,255,255,.06);cursor:pointer;
+  transition:border-color .15s,transform .1s;}
+.stage-card.unlocked:hover,.stage-card.unlocked:active{border-color:#FFD166;transform:scale(1.02);}
+.stage-card.locked{opacity:.4;cursor:default;}
+.stage-card.current-stage{border-color:#6BFF8A;box-shadow:0 0 14px rgba(107,255,138,.5);}
+.stage-info{flex:1;}
+.stage-num{font-size:.7rem;color:#9AB;letter-spacing:.1em;}
+.stage-name{font-size:.95rem;font-weight:900;margin:2px 0;}
+.stage-dots{display:flex;gap:6px;margin-top:4px;}
+.sdot{font-size:.9rem;}
+.sdot.done{color:#FFD166;}
+.sdot.todo{color:rgba(255,255,255,.3);}
+.stage-thumb{width:40px;height:107px;background-size:160px 107px;
+  background-repeat:no-repeat;background-position:0 0;mix-blend-mode:multiply;
+  background-color:#fff;border-radius:8px;flex-shrink:0;}
+#back-from-stage{padding:10px 30px;background:rgba(255,255,255,.1);color:#9AB;
+  border:none;border-radius:30px;font-size:.85rem;cursor:pointer;margin-top:4px;}
+
+/* ══ ゲーム画面 ══ */
+#game{display:none;flex-direction:column;width:100%;height:100%;
+  padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom);}
+#char-zone{flex:0 0 50%;display:flex;align-items:stretch;
+  background:linear-gradient(180deg,#c090f8 0%,#f0d0ff 45%,#fff8f0 100%);
+  position:relative;overflow:hidden;border-bottom:4px solid #FFD166;}
+#char-zone::before{content:'';position:absolute;inset:0;
+  background:radial-gradient(ellipse 140px 200px at 22% 92%,rgba(255,200,60,.55) 0%,transparent 60%),
+             radial-gradient(ellipse 140px 200px at 78% 92%,rgba(160,80,255,.5)  0%,transparent 60%);
+  pointer-events:none;}
+#teacher-char-zone,#player-char-zone{flex:1;display:flex;align-items:flex-end;justify-content:center;
+  padding-bottom:4px;position:relative;}
+.role-tag{position:absolute;top:6px;left:50%;transform:translateX(-50%);
+  font-size:.65rem;font-weight:900;padding:2px 10px;border-radius:20px;
+  letter-spacing:.08em;white-space:nowrap;z-index:2;}
+.role-tag.teacher{background:#4a6fcc;color:#fff;}
+.role-tag.you{background:#cc4a6f;color:#fff;}
+#rating-zone{flex:0 0 88px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;}
+#rating-bar{width:66px;height:11px;background:#111;border:2px solid #FFD166;border-radius:6px;overflow:hidden;}
+#rating-fill{height:100%;background:linear-gradient(90deg,#FF4444,#FFD166,#6BFF8A);transition:width .3s;border-radius:4px;}
+#rating-label{font-size:.95rem;font-weight:900;}
+.rl-cool{color:#FFD166;text-shadow:0 0 12px #FFD166;}
+.rl-good{color:#6BFF8A;text-shadow:0 0 8px #6BFF8A;}
+.rl-bad{color:#FF8844;}
+.rl-awful{color:#FF4444;}
+#song-info-bar{font-size:.6rem;color:rgba(255,255,255,.5);text-align:center;margin-top:2px;}
+.char-sprite{height:360px;width:135px;background-size:540px 360px;
+  background-repeat:no-repeat;mix-blend-mode:multiply;flex-shrink:0;}
+#teacher-sprite{background-image:url('assets/fox.jpeg');}
+#player-sprite{background-image:url('assets/panda.jpeg');}
+.s0{background-position:0px 0px;}
+.s1{background-position:-135px 0px;}
+.s2{background-position:-270px 0px;}
+.s3{background-position:-405px 0px;}
+@keyframes sb{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+@keyframes sp{0%{transform:scale(1)}35%{transform:scale(1.15)}100%{transform:scale(1)}}
+.sprite-singing{animation:sb .6s ease-in-out infinite;}
+.sprite-popping{animation:sp .25s ease-out;}
+#lyrics-bar{flex-shrink:0;background:#0a0020;border-top:2px solid #FFD166;
+  border-bottom:2px solid #FFD166;padding:4px 10px;min-height:38px;display:flex;align-items:center;}
+#lyrics-text{font-size:clamp(.65rem,2.4vw,.9rem);color:#FFD166;line-height:1.5;white-space:pre-line;}
+#highway-wrap{flex-shrink:0;position:relative;}
+canvas#hw{display:block;width:100%;}
+#phase-banner{flex-shrink:0;height:24px;display:flex;align-items:center;justify-content:center;
+  font-size:.7rem;font-weight:900;letter-spacing:.12em;}
+#phase-banner.teacher{background:#2a1a5e;color:#AAF;}
+#phase-banner.player{background:#1a3a1a;color:#6BFF8A;}
+#phase-banner.intro{background:#1a1a1a;color:#888;}
+#btns{flex:1;display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;gap:5px;padding:5px;}
+.btn{border-radius:14px;border:3px solid rgba(255,255,255,.2);
+  font-size:clamp(1.2rem,4vw,1.6rem);font-weight:900;cursor:pointer;
+  transition:transform .06s,filter .06s;display:flex;align-items:center;
+  justify-content:center;flex-direction:column;gap:2px;line-height:1;}
+.btn .bl{font-size:.5rem;font-weight:700;opacity:.7;}
+.btn:active,.btn.pressed{transform:scale(.85);filter:brightness(1.6);}
+#b0{background:#C03060;color:#FFE0EE;box-shadow:0 4px 12px rgba(192,48,96,.5);}
+#b1{background:#206840;color:#E0FFE8;box-shadow:0 4px 12px rgba(32,104,64,.5);}
+#b2{background:#1840A0;color:#E0ECFF;box-shadow:0 4px 12px rgba(24,64,160,.5);}
+#b3{background:#A02020;color:#FFE0E0;box-shadow:0 4px 12px rgba(160,32,32,.5);}
+#game-vol-wrap{position:absolute;top:6px;right:8px;display:flex;align-items:center;
+  gap:5px;z-index:10;opacity:.65;}
+#game-vol-wrap span{font-size:.6rem;color:#666;}
+#gvol{width:55px;accent-color:#FFD166;cursor:pointer;}
+@keyframes hp{0%{opacity:0;transform:translate(-50%,-50%) scale(.5);}
+  20%{opacity:1;transform:translate(-50%,-50%) scale(1.3);}
+  60%{opacity:1;transform:translate(-50%,-50%) scale(1);}
+  100%{opacity:0;transform:translate(-50%,-190%) scale(.8);}}
+.hit-pop{position:fixed;pointer-events:none;font-size:1.4rem;font-weight:900;
+  left:50%;top:40%;transform:translate(-50%,-50%);animation:hp .6s ease-out forwards;z-index:50;}
+.hp-cool{color:#FFD166;text-shadow:0 0 18px #FFD166;}
+.hp-good{color:#6BFF8A;text-shadow:0 0 14px #6BFF8A;}
+.hp-bad{color:#FF8844;}
+.hp-awful{color:#FF4444;}
+
+/* ══ リザルト ══ */
+#result{display:none;position:fixed;inset:0;background:rgba(10,0,30,.96);
+  flex-direction:column;align-items:center;justify-content:center;gap:14px;z-index:200;padding:28px;}
+#result h2{font-size:2.2rem;letter-spacing:.08em;}
+#result .stats{color:#9AB;line-height:2;text-align:center;font-size:.9rem;}
+.res-btn{padding:13px 44px;border:none;border-radius:36px;font-size:.95rem;font-weight:900;cursor:pointer;letter-spacing:.08em;}
+#retry-btn{background:#FFD166;color:#1A0A00;}
+#next-song-btn{background:#6BFF8A;color:#003300;}
+#stage-clear-btn{background:linear-gradient(135deg,#FFD166,#FF6BAD);color:#1A0008;}
+#title-btn{background:rgba(255,255,255,.1);color:#9AB;}
+</style>
+</head>
+<body>
+
+<!-- スタート画面 -->
+<div id="start" class="screen">
+  <div style="font-size:2.8rem">🦊🐼🐰</div>
+  <h1>ラップバトル！</h1>
+  <div class="sub">ステージ制リズムゲーム — 全5ステージ10曲</div>
+  <div class="sec-label">▶ キャラクター選択</div>
+  <div id="char-row">
+    <div class="char-card" data-char="rabbit">
+      <div class="char-card-img" id="prev-rabbit"></div>
+      <div class="char-name">ウサギ</div>
+    </div>
+    <div class="char-card selected" data-char="panda">
+      <div class="char-card-img" id="prev-panda"></div>
+      <div class="char-name">パンダ</div>
+    </div>
+    <div class="char-card" data-char="fox">
+      <div class="char-card-img" id="prev-fox"></div>
+      <div class="char-name">キツネ</div>
+    </div>
+    <div class="char-card" data-char="rhino">
+      <div class="char-card-img" id="prev-rhino"></div>
+      <div class="char-name">サイ</div>
+    </div>
+    <div class="char-card" data-char="husky">
+      <div class="char-card-img" id="prev-husky"></div>
+      <div class="char-name">ハスキー</div>
+    </div>
+    <div class="char-card" data-char="horse">
+      <div class="char-card-img" id="prev-horse"></div>
+      <div class="char-name">ホース</div>
+    </div>
+  </div>
+  <div class="sec-label">▶ 難易度選択</div>
+  <div id="diff-row">
+    <button class="diff-btn" data-diff="easy">🌱 初級<br><small>BPM控えめ</small></button>
+    <button class="diff-btn selected" data-diff="normal">⭐ 普通<br><small>標準</small></button>
+    <button class="diff-btn" data-diff="hard">🔥 上級<br><small>激ムズ</small></button>
+  </div>
+  <div class="sec-label">▶ ボリューム</div>
+  <div id="vol-row"><span>🔇</span><input type="range" id="vol-slider" min="0" max="100" value="80"><span>🔊</span></div>
+  <button id="start-btn">▶ ステージ選択へ</button>
+</div>
+
+<!-- ステージ選択 -->
+<div id="stage-select" class="screen hidden">
+  <h2>ステージ選択</h2>
+  <div id="stage-list"></div>
+  <button id="back-from-stage">← 設定に戻る</button>
+</div>
+
+<!-- ゲーム -->
+<div id="game">
+  <div id="char-zone" style="position:relative;">
+    <div id="game-vol-wrap">
+      <span>🔊</span><input type="range" id="gvol" min="0" max="100" value="80">
+    </div>
+    <div id="teacher-char-zone">
+      <div class="role-tag teacher" id="teacher-label">先生</div>
+      <div id="teacher-sprite" class="char-sprite s0"></div>
+    </div>
+    <div id="rating-zone">
+      <div id="rating-label" class="rl-good">グッド</div>
+      <div id="rating-bar"><div id="rating-fill" style="width:50%"></div></div>
+      <div id="score-disp" style="font-size:.7rem;color:#9AB;margin-top:1px">0</div>
+      <div id="song-info-bar"></div>
+    </div>
+    <div id="player-char-zone">
+      <div class="role-tag you" id="player-label">あなた</div>
+      <div id="player-sprite" class="char-sprite s0"></div>
+    </div>
+  </div>
+  <div id="lyrics-bar"><div id="lyrics-text">♪ ♪ ♪</div></div>
+  <div id="highway-wrap"><canvas id="hw"></canvas></div>
+  <div id="phase-banner" class="intro">♪ イントロ ♪</div>
+  <div id="btns">
+    <button class="btn" id="b0" data-lane="0">□<span class="bl">ドン</span></button>
+    <button class="btn" id="b1" data-lane="1">△<span class="bl">タン</span></button>
+    <button class="btn" id="b2" data-lane="3">×<span class="bl">チャッ</span></button>
+    <button class="btn" id="b3" data-lane="2">○<span class="bl">パン</span></button>
+  </div>
+</div>
+
+<!-- リザルト -->
+<div id="result">
+  <div id="result-char" style="font-size:2.8rem">🐼</div>
+  <h2 id="result-rank">グッド！</h2>
+  <div class="stats" id="result-stats"></div>
+  <div style="display:flex;flex-direction:column;gap:10px;width:100%;max-width:280px;">
+    <button class="res-btn hidden" id="next-song-btn">▶ 次の曲へ！</button>
+    <button class="res-btn hidden" id="stage-clear-btn">🌟 ステージクリア！</button>
+    <button class="res-btn hidden" id="retry-btn">↩ もう一度</button>
+    <button class="res-btn" id="title-btn">← ステージ選択</button>
+  </div>
+</div>
+
+<script>
+'use strict';
+// ══════════════════════════════════════════════════
+//  定数・状態
+// ══════════════════════════════════════════════════
+let selectedChar = 'panda', currentDiff = 'normal', masterVol = 0.8;
+let currentSongId = 0;
+let clearedSongs  = new Set(); // クリア済み曲ID
+
+const CHAR_ASSETS = { rabbit:'assets/rabbit.jpeg', fox:'assets/fox.jpeg', panda:'assets/panda.jpeg', rhino:'assets/rhino.jpeg', husky:'assets/husky.jpeg', horse:'assets/horse.jpeg' };
+const CHAR_LABELS = { rabbit:'ウサギ', fox:'キツネ', panda:'パンダ', rhino:'サイ', husky:'ハスキー', horse:'ホース' };
+const CHAR_EMOJIS = { rabbit:'🐰', fox:'🦊', panda:'🐼', rhino:'🦏', husky:'🐺', horse:'🐴' };
+
+const DIFFS = {
+  easy:  { bpmMul:0.75, hitMul:1.6, label:'🌱 初級' },
+  normal:{ bpmMul:1.0,  hitMul:1.0, label:'⭐ 普通' },
+  hard:  { bpmMul:1.2,  hitMul:0.7, label:'🔥 上級' },
+};
+
+const STAGES = [
+  { id:1, name:'Fox先生の道場',      teacher:'fox',   emoji:'🥋' },
+  { id:2, name:'ウサギの音楽教室',   teacher:'rabbit',emoji:'🎵' },
+  { id:3, name:'エレクトロの殿堂',   teacher:'rhino', emoji:'⚡' },
+  { id:4, name:'ロックの要塞',       teacher:'husky', emoji:'🎸' },
+  { id:5, name:'吉宗の天守閣',       teacher:'horse', emoji:'🏯' },
+];
+
+// ══════════════════════════════════════════════════
+//  曲データ — 全10曲
+// ══════════════════════════════════════════════════
+const SONGS = [
+/* ─── Stage 1 ─── */
+{
+  id:0, title:'リズムの基本！Fox道場へようこそ', stage:1, idx:0, bpm:100, teacher:'fox', genre:'hiphop',
+  drumK:[1,0,0,0,0,0,1,0,1,0,0,0,0,1,1,0], drumS:[0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0],
+  drumH:[1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0], drumOH:[0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,1],
+  bass:[110,0,0,0,0,0,110,0,98,0,0,0,0,0,82,0],
+  chords:[[220,262,330],[175,220,262],[262,330,392],[196,247,294],[220,262,330],[175,220,262],[196,247,294],[220,262,330]],
+  phrases:[
+    [{b:0,l:0},{b:1,l:1},{b:2,l:2},{b:3,l:3},{b:4,l:0},{b:4.5,l:1},{b:5,l:2},{b:6,l:3},{b:7,l:0}],
+    [{b:0,l:3},{b:1,l:2},{b:1.5,l:1},{b:2,l:0},{b:3,l:1},{b:4,l:2},{b:5,l:3},{b:6,l:2},{b:6.5,l:1},{b:7,l:0}],
+    [{b:0,l:0},{b:.5,l:2},{b:1,l:1},{b:1.5,l:3},{b:2,l:0},{b:3,l:2},{b:4,l:1},{b:4.5,l:3},{b:5,l:0},{b:6,l:2},{b:7,l:1}],
+    [{b:0,l:0},{b:1,l:1},{b:1.5,l:2},{b:2,l:3},{b:2.5,l:0},{b:3,l:1},{b:4,l:2},{b:5,l:3},{b:6,l:0},{b:6.5,l:1},{b:7,l:2}],
+  ],
+  lyrics:['ビートを感じろ\n体で覚えろ！','俺の動きを\nよく見てついてこい！','そうだ！その調子\nリズムが掴めてきた！','最後まで諦めるな\n全力でいけ！'],
+},
+{
+  id:1, title:'ダブルビート！', stage:1, idx:1, bpm:108, teacher:'fox', genre:'hiphop',
+  drumK:[1,0,1,0,0,0,1,0,1,0,1,0,0,0,1,0], drumS:[0,0,0,0,1,0,0,0,0,0,0,1,1,0,0,0],
+  drumH:[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1], drumOH:[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+  bass:[98,0,0,110,0,0,98,0,82,0,0,98,0,73,0,98],
+  chords:[[196,247,294],[220,262,330],[175,220,262],[220,262,330],[196,247,294],[175,220,262],[220,262,330],[196,247,294]],
+  phrases:[
+    [{b:0,l:0},{b:.5,l:0},{b:1,l:1},{b:2,l:2},{b:3,l:3},{b:3.5,l:3},{b:4,l:0},{b:5,l:1},{b:6,l:2},{b:7,l:3}],
+    [{b:0,l:1},{b:1,l:0},{b:1.5,l:2},{b:2,l:1},{b:3,l:3},{b:4,l:0},{b:4.5,l:2},{b:5,l:1},{b:6,l:3},{b:7,l:0}],
+    [{b:0,l:2},{b:.5,l:3},{b:1,l:0},{b:2,l:1},{b:2.5,l:2},{b:3,l:3},{b:4,l:2},{b:5,l:0},{b:6,l:1},{b:7,l:2}],
+    [{b:0,l:0},{b:1,l:2},{b:1.5,l:0},{b:2,l:3},{b:3,l:1},{b:3.5,l:3},{b:4,l:2},{b:5,l:0},{b:5.5,l:1},{b:6,l:3},{b:7,l:0}],
+  ],
+  lyrics:['ダブルビートで\nかましていけ！','リズムに乗れ\nメロディに乗れ！','止まるな止まるな\nもっと速く！','最後まで諦めず\nフィニッシュだ！'],
+},
+/* ─── Stage 2 ─── */
+{
+  id:2, title:'ジャンプ！スピン！', stage:2, idx:0, bpm:115, teacher:'rabbit', genre:'jpop',
+  drumK:[1,0,0,0,1,0,0,0,1,0,0,0,0,0,1,0], drumS:[0,0,0,0,1,0,0,1,0,0,0,0,1,0,0,0],
+  drumH:[1,0,1,0,1,0,1,0,1,1,1,0,1,0,1,1], drumOH:[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+  bass:[131,0,0,0,0,131,0,0,0,0,131,0,117,0,0,131],
+  chords:[[262,330,392],[294,370,440],[247,311,370],[220,277,330],[262,330,392],[294,370,440],[262,330,392],[247,311,370]],
+  phrases:[
+    [{b:0,l:0},{b:1,l:1},{b:1.5,l:2},{b:2,l:1},{b:3,l:0},{b:4,l:3},{b:4.5,l:3},{b:5,l:2},{b:6,l:1},{b:7,l:0}],
+    [{b:0,l:2},{b:1,l:3},{b:2,l:0},{b:2.5,l:1},{b:3,l:2},{b:4,l:3},{b:5,l:0},{b:5.5,l:2},{b:6,l:1},{b:7,l:3}],
+    [{b:0,l:1},{b:.5,l:0},{b:1,l:3},{b:2,l:2},{b:3,l:1},{b:4,l:0},{b:4.5,l:3},{b:5,l:2},{b:6,l:0},{b:7,l:1}],
+    [{b:0,l:3},{b:1,l:2},{b:2,l:1},{b:2.5,l:0},{b:3,l:3},{b:3.5,l:2},{b:4,l:1},{b:5,l:0},{b:6,l:3},{b:6.5,l:2},{b:7,l:1}],
+  ],
+  lyrics:['ジャンプ！スピン！\nキラキラ輝け！','リズムは心で\n感じるもの♪','ウサギのステップ\nついてこれる？','最後のポーズで\n決めてみせろ！'],
+},
+{
+  id:3, title:'ウサギのラップ', stage:2, idx:1, bpm:120, teacher:'rabbit', genre:'jpop',
+  drumK:[1,0,0,1,0,0,1,0,1,0,0,0,1,0,1,0], drumS:[0,0,1,0,1,0,0,0,0,1,0,0,1,0,0,1],
+  drumH:[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0], drumOH:[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+  bass:[131,0,0,0,123,0,0,110,0,0,131,0,0,117,0,0],
+  chords:[[262,330,392],[220,277,330],[247,311,370],[262,330,392],[220,277,330],[247,311,370],[262,330,392],[220,277,330]],
+  phrases:[
+    [{b:0,l:0},{b:.5,l:1},{b:1,l:2},{b:1.5,l:3},{b:2,l:0},{b:3,l:2},{b:4,l:1},{b:4.5,l:3},{b:5,l:0},{b:6,l:2},{b:7,l:3}],
+    [{b:0,l:3},{b:.5,l:2},{b:1,l:1},{b:2,l:0},{b:2.5,l:1},{b:3,l:2},{b:4,l:3},{b:5,l:0},{b:6,l:1},{b:6.5,l:2},{b:7,l:3}],
+    [{b:0,l:1},{b:1,l:3},{b:1.5,l:2},{b:2,l:0},{b:3,l:1},{b:3.5,l:3},{b:4,l:2},{b:5,l:0},{b:5.5,l:1},{b:6,l:3},{b:7,l:2}],
+    [{b:0,l:0},{b:.5,l:2},{b:1,l:1},{b:1.5,l:3},{b:2,l:0},{b:2.5,l:2},{b:3,l:1},{b:3.5,l:3},{b:4,l:0},{b:5,l:2},{b:6,l:1},{b:7,l:3}],
+  ],
+  lyrics:['ピョンピョン跳ねて\nリズム刻め！','速いほど楽しい\n止まるな！','耳を澄ませ\nビートを感じろ！','ラストスパート\n全力で行け！'],
+},
+/* ─── Stage 3 ─── */
+{
+  id:4, title:'エレクトロダンス', stage:3, idx:0, bpm:126, teacher:'rhino', genre:'edm',
+  drumK:[1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0], drumS:[0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0],
+  drumH:[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1], drumOH:[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+  bass:[82,0,0,82,0,0,82,0,73,0,0,73,0,0,82,0],
+  chords:[[175,220,277],[196,247,311],[175,220,277],[185,233,294],[175,220,277],[196,247,311],[175,220,277],[196,247,311]],
+  phrases:[
+    [{b:0,l:0},{b:1,l:2},{b:2,l:0},{b:2.5,l:3},{b:3,l:1},{b:4,l:0},{b:4.5,l:2},{b:5,l:0},{b:6,l:3},{b:7,l:1}],
+    [{b:0,l:1},{b:.5,l:3},{b:1,l:2},{b:2,l:0},{b:3,l:1},{b:3.5,l:0},{b:4,l:3},{b:5,l:2},{b:6,l:0},{b:7,l:3}],
+    [{b:0,l:3},{b:1,l:0},{b:2,l:2},{b:2.5,l:1},{b:3,l:3},{b:4,l:0},{b:4.5,l:1},{b:5,l:2},{b:5.5,l:0},{b:6,l:3},{b:7,l:2}],
+    [{b:0,l:2},{b:.5,l:0},{b:1,l:3},{b:1.5,l:1},{b:2,l:2},{b:3,l:0},{b:3.5,l:3},{b:4,l:1},{b:5,l:2},{b:5.5,l:0},{b:6,l:3},{b:7,l:1}],
+  ],
+  lyrics:['フロアを揺らせ\nエレクトロビート！','4つ打ちリズム\n体で刻め！','ドロップが来るぞ\n準備はいいか？','クライマックス\n限界突破！'],
+},
+{
+  id:5, title:'ナイトクラブ', stage:3, idx:1, bpm:132, teacher:'rhino', genre:'edm',
+  drumK:[1,0,0,0,1,0,0,1,1,0,0,0,1,0,1,0], drumS:[0,0,0,0,1,0,0,0,0,0,1,0,1,0,0,0],
+  drumH:[1,1,0,1,1,1,0,1,1,1,0,1,1,1,0,1], drumOH:[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+  bass:[65,0,65,0,0,65,0,0,58,0,58,0,0,65,0,0],
+  chords:[[131,165,196],[138,175,207],[131,165,196],[123,155,185],[131,165,196],[138,175,207],[146,185,220],[131,165,196]],
+  phrases:[
+    [{b:0,l:0},{b:.5,l:2},{b:1,l:0},{b:1.5,l:3},{b:2,l:1},{b:3,l:0},{b:3.5,l:2},{b:4,l:3},{b:5,l:0},{b:6,l:1},{b:7,l:2}],
+    [{b:0,l:3},{b:1,l:1},{b:1.5,l:0},{b:2,l:2},{b:2.5,l:3},{b:3,l:0},{b:4,l:1},{b:4.5,l:3},{b:5,l:2},{b:6,l:0},{b:7,l:1}],
+    [{b:0,l:1},{b:.5,l:3},{b:1,l:2},{b:1.5,l:0},{b:2,l:1},{b:2.5,l:3},{b:3,l:2},{b:4,l:0},{b:4.5,l:1},{b:5,l:3},{b:6,l:2},{b:7,l:0}],
+    [{b:0,l:0},{b:.5,l:1},{b:1,l:2},{b:1.5,l:3},{b:2,l:0},{b:2.5,l:1},{b:3,l:2},{b:3.5,l:3},{b:4,l:0},{b:5,l:2},{b:6,l:1},{b:7,l:3}],
+  ],
+  lyrics:['ナイトクラブへ\nようこそ！','光と闇の中\nビートを刻め！','DJの合図を\n聴き逃すな！','夜明けまで\n踊り続けろ！'],
+},
+/* ─── Stage 4 ─── */
+{
+  id:6, title:'ロックンラップ', stage:4, idx:0, bpm:138, teacher:'husky', genre:'rock',
+  drumK:[1,0,0,1,0,0,1,0,1,0,1,0,0,0,1,0], drumS:[0,0,0,0,1,0,1,0,0,0,0,0,1,0,0,1],
+  drumH:[1,0,1,0,1,0,1,0,1,0,1,1,1,0,1,0], drumOH:[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+  bass:[82,0,0,0,82,0,0,73,73,0,0,0,82,0,82,0],
+  chords:[[165,220,277],[147,196,247],[165,220,277],[156,207,261],[165,220,277],[147,196,247],[165,220,277],[185,247,311]],
+  phrases:[
+    [{b:0,l:0},{b:.5,l:1},{b:1,l:0},{b:2,l:2},{b:2.5,l:3},{b:3,l:0},{b:4,l:1},{b:4.5,l:2},{b:5,l:3},{b:6,l:0},{b:7,l:1}],
+    [{b:0,l:2},{b:.5,l:3},{b:1,l:2},{b:1.5,l:1},{b:2,l:0},{b:3,l:2},{b:3.5,l:3},{b:4,l:0},{b:5,l:1},{b:5.5,l:2},{b:6,l:3},{b:7,l:0}],
+    [{b:0,l:0},{b:.5,l:0},{b:1,l:1},{b:1.5,l:2},{b:2,l:3},{b:2.5,l:0},{b:3,l:1},{b:3.5,l:2},{b:4,l:3},{b:5,l:0},{b:6,l:2},{b:7,l:3}],
+    [{b:0,l:1},{b:.5,l:3},{b:1,l:0},{b:1.5,l:2},{b:2,l:1},{b:2.5,l:3},{b:3,l:0},{b:3.5,l:2},{b:4,l:1},{b:4.5,l:3},{b:5,l:0},{b:6,l:2},{b:7,l:1}],
+  ],
+  lyrics:['ロックの魂\n解き放て！','エレキの轟きで\n全てを揺らせ！','限界なんてない\n突き破れ！','ラストソロ\n魂を込めろ！'],
+},
+{
+  id:7, title:'フルスロットル', stage:4, idx:1, bpm:145, teacher:'husky', genre:'rock',
+  drumK:[1,0,1,0,1,0,0,1,1,0,1,0,1,0,0,0], drumS:[0,0,0,1,1,0,0,0,0,0,1,0,1,0,1,0],
+  drumH:[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1], drumOH:[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+  bass:[82,82,0,0,73,0,82,0,73,73,0,0,82,0,73,0],
+  chords:[[165,220,277],[156,207,261],[147,196,247],[165,220,277],[156,207,261],[147,196,247],[165,220,277],[185,247,311]],
+  phrases:[
+    [{b:0,l:0},{b:.5,l:2},{b:1,l:1},{b:1.5,l:3},{b:2,l:0},{b:2.5,l:2},{b:3,l:1},{b:4,l:3},{b:4.5,l:0},{b:5,l:2},{b:6,l:1},{b:7,l:3}],
+    [{b:0,l:3},{b:.5,l:1},{b:1,l:2},{b:1.5,l:0},{b:2,l:3},{b:2.5,l:1},{b:3,l:2},{b:3.5,l:0},{b:4,l:3},{b:5,l:1},{b:6,l:2},{b:7,l:0}],
+    [{b:0,l:1},{b:.5,l:3},{b:1,l:0},{b:1.5,l:2},{b:2,l:1},{b:2.5,l:3},{b:3,l:0},{b:3.5,l:2},{b:4,l:1},{b:4.5,l:3},{b:5,l:0},{b:5.5,l:2},{b:6,l:1},{b:7,l:3}],
+    [{b:0,l:2},{b:.5,l:0},{b:1,l:3},{b:1.5,l:1},{b:2,l:2},{b:2.5,l:0},{b:3,l:3},{b:3.5,l:1},{b:4,l:2},{b:4.5,l:0},{b:5,l:3},{b:5.5,l:1},{b:6,l:0},{b:7,l:2}],
+  ],
+  lyrics:['全速前進\n止まるな！','ハンドルを握れ\nアクセル全開！','曲がり角でも\n減速するな！','ゴールまで\nフルスロットル！'],
+},
+/* ─── Stage 5 ─── */
+{
+  id:8, title:'江戸の祭り', stage:5, idx:0, bpm:150, teacher:'horse', genre:'wajapan',
+  drumK:[1,0,0,1,0,0,1,0,1,0,0,0,1,0,1,0], drumS:[0,0,1,0,1,0,0,0,0,1,0,0,1,0,0,1],
+  drumH:[1,0,1,1,1,0,1,1,1,0,1,0,1,1,1,0], drumOH:[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+  bass:[110,0,0,110,0,0,82,0,98,0,0,98,0,82,0,110],
+  chords:[[220,262,330],[196,247,294],[175,220,262],[185,220,277],[220,262,330],[196,247,294],[185,220,277],[220,262,330]],
+  phrases:[
+    [{b:0,l:0},{b:.5,l:2},{b:1,l:0},{b:1.5,l:3},{b:2,l:1},{b:2.5,l:3},{b:3,l:0},{b:4,l:2},{b:4.5,l:1},{b:5,l:3},{b:6,l:0},{b:7,l:2}],
+    [{b:0,l:1},{b:.5,l:3},{b:1,l:2},{b:1.5,l:0},{b:2,l:1},{b:2.5,l:3},{b:3,l:2},{b:3.5,l:0},{b:4,l:1},{b:5,l:3},{b:5.5,l:2},{b:6,l:0},{b:7,l:1}],
+    [{b:0,l:2},{b:.5,l:0},{b:1,l:3},{b:1.5,l:1},{b:2,l:2},{b:2.5,l:0},{b:3,l:3},{b:3.5,l:1},{b:4,l:2},{b:4.5,l:0},{b:5,l:3},{b:6,l:1},{b:7,l:2}],
+    [{b:0,l:0},{b:.5,l:1},{b:1,l:2},{b:1.5,l:3},{b:2,l:0},{b:2.5,l:1},{b:3,l:2},{b:3.5,l:3},{b:4,l:0},{b:4.5,l:1},{b:5,l:2},{b:5.5,l:3},{b:6,l:0},{b:7,l:2}],
+  ],
+  lyrics:['ドンドン太鼓で\n祭り開幕！','江戸の空に\n花火が上がる！','三味の音色が\n響き渡る！','夏祭り最高潮\n全力で！'],
+},
+{
+  id:9, title:'姫のうた ～吉宗style～', stage:5, idx:1, bpm:158, teacher:'horse', genre:'yoshimune',
+  drumK:[1,0,0,0,1,0,1,0,1,0,0,1,0,1,0,0], drumS:[0,0,1,0,0,1,0,0,0,0,1,0,1,0,0,1],
+  drumH:[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0], drumOH:[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+  bass:[110,0,110,0,0,98,0,110,98,0,0,82,0,0,110,0],
+  chords:[[220,294,440],[196,262,392],[175,220,330],[196,262,392],[220,294,440],[175,220,330],[196,262,392],[220,294,440]],
+  phrases:[
+    [{b:0,l:0},{b:.5,l:1},{b:1,l:2},{b:1.5,l:3},{b:2,l:0},{b:2.5,l:1},{b:3,l:2},{b:4,l:3},{b:4.5,l:2},{b:5,l:1},{b:6,l:0},{b:7,l:3}],
+    [{b:0,l:3},{b:.5,l:2},{b:1,l:1},{b:1.5,l:0},{b:2,l:3},{b:2.5,l:2},{b:3,l:1},{b:3.5,l:0},{b:4,l:3},{b:5,l:2},{b:6,l:1},{b:7,l:0}],
+    [{b:0,l:1},{b:.5,l:0},{b:1,l:3},{b:1.5,l:2},{b:2,l:1},{b:2.5,l:0},{b:3,l:3},{b:3.5,l:2},{b:4,l:1},{b:4.5,l:0},{b:5,l:3},{b:5.5,l:2},{b:6,l:1},{b:7,l:0}],
+    [{b:0,l:2},{b:.5,l:3},{b:1,l:0},{b:1.5,l:1},{b:2,l:2},{b:2.5,l:3},{b:3,l:0},{b:3.5,l:1},{b:4,l:2},{b:4.5,l:3},{b:5,l:0},{b:5.5,l:1},{b:6,l:2},{b:6.5,l:3},{b:7,l:0}],
+  ],
+  lyrics:['将軍様の\nお出ましだ！','姫のリズムで\n天下を取れ！','三味線鳴らして\n舞い踊れ！','大当たり！姫BIG\n全力フィナーレ！'],
+},
+];
+
+// 吉宗 姫BIG style 三味線メロディ（Aマイナーペンタトニック）
+const YOSHIMUNE_MELODY = [
+  // フレーズA: 下降→上昇
+  {t:0,f:659},{t:.5,f:587},{t:1,f:523},{t:1.5,f:440},
+  {t:2,f:392},{t:2.5,f:440},{t:3,f:523},{t:3.5,f:587},
+  {t:4,f:659},{t:4.5,f:784},{t:5,f:880},{t:5.5,f:784},
+  {t:6,f:659},{t:6.5,f:587},{t:7,f:523},{t:7.5,f:440},
+  // フレーズB: 上昇→頂点→下降
+  {t:8,f:440},{t:8.5,f:523},{t:9,f:587},{t:9.5,f:659},
+  {t:10,f:784},{t:10.5,f:880},{t:11,f:784},{t:11.5,f:659},
+  {t:12,f:587},{t:12.5,f:523},{t:13,f:440},{t:13.5,f:392},
+  {t:14,f:440},{t:14.5,f:523},{t:15,f:587},{t:15.5,f:659},
+];
+
+// 江戸の祭り 三味線メロディ
+const WAJAPAN_MELODY = [
+  {t:0,f:330},{t:.5,f:392},{t:1,f:440},{t:1.5,f:392},
+  {t:2,f:330},{t:2.5,f:294},{t:3,f:330},{t:3.5,f:392},
+  {t:4,f:440},{t:4.5,f:523},{t:5,f:440},{t:5.5,f:392},
+  {t:6,f:330},{t:6.5,f:294},{t:7,f:220},{t:7.5,f:294},
+  {t:8,f:330},{t:8.5,f:440},{t:9,f:330},{t:9.5,f:220},
+  {t:10,f:262},{t:10.5,f:294},{t:11,f:330},{t:11.5,f:392},
+  {t:12,f:440},{t:12.5,f:392},{t:13,f:330},{t:13.5,f:294},
+  {t:14,f:220},{t:14.5,f:294},{t:15,f:330},{t:15.5,f:440},
+];
+
+// ══════════════════════════════════════════════════
+//  オーディオエンジン
+// ══════════════════════════════════════════════════
+let actx, noiseBuf, masterGain;
+function bootAudio(){
+  if(actx){actx.resume();return;}
+  actx=new(window.AudioContext||window.webkitAudioContext)();
+  masterGain=actx.createGain();masterGain.gain.value=masterVol;masterGain.connect(actx.destination);
+  const len=Math.ceil(actx.sampleRate*.6);noiseBuf=actx.createBuffer(1,len,actx.sampleRate);
+  const d=noiseBuf.getChannelData(0);for(let i=0;i<len;i++)d[i]=Math.random()*2-1;
+}
+function G(v,t){const g=actx.createGain();g.gain.setValueAtTime(v,t);return g;}
+function conn(...ns){for(let i=0;i<ns.length-1;i++)ns[i].connect(ns[i+1]);}
+const DST=()=>masterGain;
+
+function playKick(t){
+  const o=actx.createOscillator(),g=G(2.2,t);
+  o.frequency.setValueAtTime(160,t);o.frequency.exponentialRampToValueAtTime(.001,t+.38);
+  g.gain.exponentialRampToValueAtTime(.001,t+.38);conn(o,g,DST());o.start(t);o.stop(t+.4);
+}
+function playSnare(t){
+  const ns=actx.createBufferSource();ns.buffer=noiseBuf;
+  const f=actx.createBiquadFilter();f.type='bandpass';f.frequency.value=2400;f.Q.value=.8;
+  const g=G(1.5,t);g.gain.exponentialRampToValueAtTime(.001,t+.14);
+  conn(ns,f,g,DST());ns.start(t);ns.stop(t+.15);
+  const o=actx.createOscillator(),og=G(.6,t);o.frequency.value=180;
+  og.gain.exponentialRampToValueAtTime(.001,t+.07);conn(o,og,DST());o.start(t);o.stop(t+.08);
+}
+function playHat(t,open=false){
+  const dur=open?.14:.035,hpf=actx.createBiquadFilter();hpf.type='highpass';hpf.frequency.value=7200;
+  const g=G(open?.28:.18,t);g.gain.exponentialRampToValueAtTime(.001,t+dur);conn(hpf,g,DST());
+  [2,3,4.16,5.43,6.79].forEach(r=>{const o=actx.createOscillator();o.type='square';o.frequency.value=42*r;conn(o,hpf);o.start(t);o.stop(t+dur);});
+}
+function playBass(t,freq){
+  const o=actx.createOscillator();o.type='sawtooth';o.frequency.value=freq;
+  const lpf=actx.createBiquadFilter();lpf.type='lowpass';lpf.frequency.value=380;
+  const g=G(.7,t);g.gain.exponentialRampToValueAtTime(.001,t+.28);conn(o,lpf,g,DST());o.start(t);o.stop(t+.3);
+}
+function playChord(t,freqs,vol=.22,dur=.14){
+  freqs.forEach(f=>{const o=actx.createOscillator();o.type='triangle';o.frequency.value=f;
+    const g=G(vol/freqs.length,t);g.gain.exponentialRampToValueAtTime(.001,t+dur);
+    conn(o,g,DST());o.start(t);o.stop(t+dur+.05);});
+}
+// 三味線（和風曲用）
+function playShamisen(t,freq,dur=.14){
+  const o=actx.createOscillator();o.type='sawtooth';
+  o.frequency.setValueAtTime(freq*1.018,t);o.frequency.exponentialRampToValueAtTime(freq,t+.025);
+  const bpf=actx.createBiquadFilter();bpf.type='bandpass';bpf.frequency.value=2200;bpf.Q.value=1.8;
+  const g=G(.5,t);g.gain.setValueAtTime(.5,t);g.gain.setValueAtTime(.18,t+.04);
+  g.gain.exponentialRampToValueAtTime(.001,t+dur);conn(o,bpf,g,DST());o.start(t);o.stop(t+dur+.02);
+}
+// 太鼓（和風曲用）
+function playTaiko(t,big=false){
+  const freq=big?60:85;
+  const o=actx.createOscillator();o.type='sine';
+  o.frequency.setValueAtTime(freq*1.4,t);o.frequency.exponentialRampToValueAtTime(freq,t+.08);
+  const g=G(big?2.5:1.6,t);g.gain.exponentialRampToValueAtTime(.001,t+(big?.4:.22));
+  conn(o,g,DST());o.start(t);o.stop(t+(big?.45:.27));
+  const ns=actx.createBufferSource();ns.buffer=noiseBuf;
+  const f=actx.createBiquadFilter();f.type='bandpass';f.frequency.value=big?600:1000;f.Q.value=2;
+  const ng=G(big?.55:.3,t);ng.gain.exponentialRampToValueAtTime(.001,t+.04);
+  conn(ns,f,ng,DST());ns.start(t);ns.stop(t+.05);
+}
+function playHitVoice(t,lane){
+  const v=[
+    ()=>{const o=actx.createOscillator(),g=G(1,t);o.type='sine';o.frequency.setValueAtTime(120,t);o.frequency.exponentialRampToValueAtTime(40,t+.15);g.gain.exponentialRampToValueAtTime(.001,t+.18);conn(o,g,DST());o.start(t);o.stop(t+.2);},
+    ()=>{const o=actx.createOscillator(),g=G(.7,t);o.type='square';o.frequency.setValueAtTime(440,t);o.frequency.exponentialRampToValueAtTime(180,t+.1);g.gain.exponentialRampToValueAtTime(.001,t+.12);conn(o,g,DST());o.start(t);o.stop(t+.15);},
+    ()=>{const ns=actx.createBufferSource();ns.buffer=noiseBuf;const f=actx.createBiquadFilter();f.type='bandpass';f.frequency.value=3000;f.Q.value=1.5;const g=G(.8,t);g.gain.exponentialRampToValueAtTime(.001,t+.08);conn(ns,f,g,DST());ns.start(t);ns.stop(t+.09);},
+    ()=>{const o=actx.createOscillator(),g=G(.9,t);o.type='sine';o.frequency.setValueAtTime(80,t);o.frequency.exponentialRampToValueAtTime(30,t+.2);g.gain.exponentialRampToValueAtTime(.001,t+.22);conn(o,g,DST());o.start(t);o.stop(t+.25);},
+  ];
+  v[lane]();
+}
+
+// ══════════════════════════════════════════════════
+//  ゲーム状態
+// ══════════════════════════════════════════════════
+let BPM,B,S,SONG_DUR;
+const SONG_BEATS=80;
+let songStart=0,gameActive=false,notes=[],score=0;
+let hits={cool:0,good:0,bad:0,awful:0};
+let ratingScore=50,currentPhaseType='intro',lastPhaseIdx=-1;
+let schedPtr=0,melodyPtr=0,drumEvts=[],melodyEvts=[],schedTimer=null;
+
+function curSong(){return SONGS[currentSongId];}
+function getSongTeacher(song){
+  const t=song.teacher;
+  if(t===selectedChar) return t==='rabbit'?'fox':'rabbit';
+  return t;
+}
+
+function buildDrumEvents(){
+  const s=curSong();
+  drumEvts=[];
+  const bars=SONG_BEATS/4;
+  for(let bar=0;bar<bars;bar++){
+    for(let step=0;step<16;step++){
+      const t=(bar*16+step)*S,ev={t};
+      if(s.drumK[step])  ev.kick=true;
+      if(s.drumS[step])  ev.snare=true;
+      if(s.drumH[step])  ev.hat=true;
+      if(s.drumOH&&s.drumOH[step]) ev.openHat=true;
+      if(s.bass[step]>0) ev.bass=s.bass[step];
+      if(step===0)  ev.chord=s.chords[bar%s.chords.length];
+      if(step===8)  ev.chord2=s.chords[(bar+4)%s.chords.length];
+      drumEvts.push(ev);
+    }
+  }
+}
+
+function buildMelodyEvents(){
+  melodyEvts=[];
+  const g=curSong().genre;
+  if(g!=='yoshimune'&&g!=='wajapan') return;
+  const src=g==='yoshimune'?YOSHIMUNE_MELODY:WAJAPAN_MELODY;
+  const cycleBeats=16;
+  const cycles=Math.ceil(SONG_BEATS/cycleBeats);
+  for(let c=0;c<cycles;c++){
+    src.forEach(m=>{
+      const beat=c*cycleBeats+m.t;
+      if(beat<SONG_BEATS) melodyEvts.push({t:beat*B,f:m.f});
+    });
+  }
+}
+
+function scheduleSong(){
+  if(!gameActive) return;
+  const songNow=actx.currentTime-songStart;
+  const AHEAD=0.22;
+  // ドラム
+  while(schedPtr<drumEvts.length&&drumEvts[schedPtr].t<songNow+AHEAD){
+    const ev=drumEvts[schedPtr];const t=songStart+ev.t;
+    if(t<actx.currentTime-.01){schedPtr++;continue;}
+    const wa=curSong().genre==='yoshimune'||curSong().genre==='wajapan';
+    if(ev.kick)    wa?playTaiko(t,true):playKick(t);
+    if(ev.snare)   wa?playTaiko(t,false):playSnare(t);
+    if(ev.hat&&!wa)    playHat(t,false);
+    if(ev.openHat&&!wa)playHat(t,true);
+    if(ev.bass)    playBass(t,ev.bass);
+    if(ev.chord)   playChord(t,ev.chord,.22,.12);
+    if(ev.chord2)  playChord(t,ev.chord2,.16,.1);
+    schedPtr++;
+  }
+  // 三味線メロディ
+  while(melodyPtr<melodyEvts.length&&melodyEvts[melodyPtr].t<songNow+AHEAD){
+    const m=melodyEvts[melodyPtr];const t=songStart+m.t;
+    if(t>=actx.currentTime-.01) playShamisen(t,m.f,.13);
+    melodyPtr++;
+  }
+  // 先生ノート自動演奏
+  const songT=actx.currentTime-songStart;
+  notes.forEach(n=>{
+    if(n.isTeacher&&!n.autoPlayed&&n.time<songT+AHEAD){
+      const t=songStart+n.time;if(t>=actx.currentTime-.01)playHitVoice(t,n.lane);
+      n.autoPlayed=true;
+    }
+  });
+  if(songNow>=SONG_DUR){endSong();return;}
+  schedTimer=setTimeout(scheduleSong,18);
+}
+
+// ══════════════════════════════════════════════════
+//  譜面生成
+// ══════════════════════════════════════════════════
+function makeChart(){
+  const s=curSong();
+  const bpmMul=DIFFS[currentDiff].bpmMul;
+  const phrases=s.phrases.map(ph=>{
+    let arr=ph.map(n=>({...n}));
+    if(currentDiff==='easy')      arr=arr.filter(n=>n.b===Math.floor(n.b));
+    else if(currentDiff==='hard') arr=addHardNotes(arr,s.id);
+    return arr;
+  });
+  const ns=[];const introB=16;
+  phrases.forEach((ph,pi)=>{
+    const ts=introB+pi*16,ps=introB+pi*16+8;
+    ph.forEach(n=>{
+      ns.push({beat:ts+n.b,lane:n.l,isTeacher:true, autoPlayed:false,hit:false,missed:false});
+      ns.push({beat:ps+n.b,lane:n.l,isTeacher:false,hit:false,missed:false});
+    });
+  });
+  ns.forEach(n=>{n.time=n.beat*B;});
+  ns.sort((a,b)=>a.time-b.time);
+  return ns;
+}
+function addHardNotes(arr,songId){
+  const density=Math.min(songId*.5+1,4);
+  const extra=[];
+  for(let i=1;i<arr.length;i++){
+    const gap=arr[i].b-arr[i-1].b;
+    if(gap>0.5&&extra.length<density){
+      extra.push({b:(arr[i-1].b+arr[i].b)/2,l:(arr[i].l+2)%4});
+    }
+  }
+  return [...arr,...extra].sort((a,b)=>a.b-b.b);
+}
+
+function buildPhases(){
+  const s=curSong();
+  const intro=`♪ ${s.title} ♪\nステージ${s.stage} — 曲${s.idx+1}`;
+  return[
+    {start:0, end:16,type:'intro',  label:'♪ イントロ ♪',      lyrics:intro},
+    {start:16,end:24,type:'teacher',label:'♪ 先生フェーズ ♪', lyrics:s.lyrics[0]},
+    {start:24,end:32,type:'player', label:'→ あなたの番！ ←',  lyrics:'繰り返せ！'},
+    {start:32,end:40,type:'teacher',label:'♪ 先生フェーズ ♪', lyrics:s.lyrics[1]},
+    {start:40,end:48,type:'player', label:'→ あなたの番！ ←',  lyrics:'繰り返せ！'},
+    {start:48,end:56,type:'teacher',label:'♪ 先生フェーズ ♪', lyrics:s.lyrics[2]},
+    {start:56,end:64,type:'player', label:'→ あなたの番！ ←',  lyrics:'繰り返せ！'},
+    {start:64,end:72,type:'teacher',label:'♪ 先生フェーズ ♪', lyrics:s.lyrics[3]},
+    {start:72,end:80,type:'player', label:'→ ラスト！全力！ ←', lyrics:'最後！全力で！'},
+  ];
+}
+let PHASES=[];
+
+// ══════════════════════════════════════════════════
+//  キャンバス ノートハイウェイ
+// ══════════════════════════════════════════════════
+const HW_H=110,HIT_X=72,SCROLL_SPD=160,NOTE_W=40;
+const LANE_COLORS=['#FF6BAD','#6BFF8A','#FF4444','#4488FF'];
+const LANE_LABELS=['□','△','○','×'];
+let canvas,c2d;
+function initCanvas(){
+  canvas=document.getElementById('hw');
+  canvas.height=HW_H;canvas.width=window.innerWidth;c2d=canvas.getContext('2d');
+}
+function drawHighway(st){
+  const W=canvas.width,LH=HW_H/4;
+  c2d.fillStyle='#050010';c2d.fillRect(0,0,W,HW_H);
+  for(let i=0;i<4;i++){c2d.fillStyle=i%2===0?'rgba(255,255,255,.025)':'rgba(0,0,0,0)';c2d.fillRect(0,i*LH,W,LH);}
+  c2d.strokeStyle='rgba(255,255,255,.08)';c2d.lineWidth=1;
+  for(let i=1;i<4;i++){c2d.beginPath();c2d.moveTo(0,i*LH);c2d.lineTo(W,i*LH);c2d.stroke();}
+  const grd=c2d.createLinearGradient(HIT_X-28,0,HIT_X+28,0);
+  grd.addColorStop(0,'rgba(255,255,255,0)');grd.addColorStop(.5,'rgba(255,255,255,.12)');grd.addColorStop(1,'rgba(255,255,255,0)');
+  c2d.fillStyle=grd;c2d.fillRect(HIT_X-28,0,56,HW_H);
+  c2d.strokeStyle='rgba(255,255,255,.9)';c2d.lineWidth=2;c2d.beginPath();c2d.moveTo(HIT_X,0);c2d.lineTo(HIT_X,HW_H);c2d.stroke();
+  for(let i=0;i<4;i++){c2d.fillStyle=LANE_COLORS[i];c2d.font='bold 12px Arial';c2d.textAlign='center';c2d.fillText(LANE_LABELS[i],HIT_X-22,i*LH+LH*.62);}
+  notes.forEach(n=>{
+    if(n.hit||n.missed) return;
+    const x=HIT_X+(n.time-st)*SCROLL_SPD;
+    if(x<-NOTE_W||x>W+NOTE_W) return;
+    const y=n.lane*LH,col=LANE_COLORS[n.lane];
+    c2d.save();
+    if(n.isTeacher){c2d.strokeStyle=col;c2d.lineWidth=3;c2d.shadowColor=col;c2d.shadowBlur=7;c2d.strokeRect(x-NOTE_W/2,y+2,NOTE_W,LH-4);c2d.fillStyle=col;c2d.font='bold 14px Arial';c2d.textAlign='center';c2d.fillText(LANE_LABELS[n.lane],x,y+LH*.65);}
+    else{c2d.shadowColor=col;c2d.shadowBlur=10;c2d.fillStyle=col;c2d.fillRect(x-NOTE_W/2,y+2,NOTE_W,LH-4);c2d.shadowBlur=0;c2d.fillStyle='rgba(0,0,0,.7)';c2d.font='bold 15px Arial';c2d.textAlign='center';c2d.fillText(LANE_LABELS[n.lane],x,y+LH*.65);}
+    c2d.restore();
+  });
+}
+
+// ══════════════════════════════════════════════════
+//  ヒット判定
+// ══════════════════════════════════════════════════
+const BASE_W={cool:.05,good:.12,bad:.22};
+function getW(){const m=DIFFS[currentDiff].hitMul;return{cool:BASE_W.cool*m,good:BASE_W.good*m,bad:BASE_W.bad*m};}
+
+function onButton(lane){
+  if(!gameActive) return;
+  const now=actx.currentTime,songT=now-songStart,W=getW();
+  const btn=document.querySelector(`.btn[data-lane="${lane}"]`);
+  if(btn){btn.classList.add('pressed');setTimeout(()=>btn.classList.remove('pressed'),100);}
+  let best=null,bestD=W.bad+.05;
+  notes.forEach(n=>{if(n.isTeacher||n.hit||n.missed||n.lane!==lane)return;const d=Math.abs(songT-n.time);if(d<bestD){bestD=d;best=n;}});
+  if(!best){hits.awful++;showPop('ミス','hp-awful');ratingScore=Math.max(0,ratingScore-8);updateRating();triggerReact(false);return;}
+  best.hit=true;playHitVoice(now,lane);triggerReact(true);
+  let grade,cls;
+  if(bestD<=W.cool)     {grade='クール！';cls='hp-cool';hits.cool++;ratingScore=Math.min(100,ratingScore+8);}
+  else if(bestD<=W.good){grade='グッド！';cls='hp-good';hits.good++;ratingScore=Math.min(100,ratingScore+3);}
+  else                   {grade='バッド';  cls='hp-bad'; hits.bad++; ratingScore=Math.max(0,ratingScore-3);}
+  score+=cls==='hp-cool'?300:cls==='hp-good'?100:20;
+  showPop(grade,cls);updateRating();
+}
+function showPop(txt,cls){const el=document.createElement('div');el.className='hit-pop '+cls;el.textContent=txt;document.body.appendChild(el);setTimeout(()=>el.remove(),650);}
+function updateRating(){
+  const fill=document.getElementById('rating-fill'),lbl=document.getElementById('rating-label'),sd=document.getElementById('score-disp');
+  fill.style.width=ratingScore+'%';
+  let r,c;
+  if(ratingScore>=80){r='クール！';c='rl-cool';}else if(ratingScore>=55){r='グッド';c='rl-good';}else if(ratingScore>=30){r='バッド';c='rl-bad';}else{r='最悪';c='rl-awful';}
+  lbl.textContent=r;lbl.className=c;sd.textContent=score;
+}
+
+// ══════════════════════════════════════════════════
+//  スプライト制御
+// ══════════════════════════════════════════════════
+function setFrame(id,f){const el=document.getElementById(id);el.classList.remove('s0','s1','s2','s3');el.classList.add('s'+f);}
+function triggerReact(pos){
+  const el=document.getElementById('player-sprite');
+  el.classList.remove('sprite-singing','sprite-popping');void el.offsetWidth;
+  if(pos){setFrame('player-sprite',2);el.classList.add('sprite-popping');setTimeout(()=>{el.classList.remove('sprite-popping');setFrame('player-sprite',currentPhaseType==='player'?1:0);if(currentPhaseType==='player')el.classList.add('sprite-singing');},350);}
+  else{setFrame('player-sprite',3);setTimeout(()=>{setFrame('player-sprite',currentPhaseType==='player'?1:0);if(currentPhaseType==='player')el.classList.add('sprite-singing');},500);}
+}
+function updatePhase(beatNow){
+  const pi=PHASES.findIndex(p=>beatNow>=p.start&&beatNow<p.end);
+  if(pi<0||pi===lastPhaseIdx) return;
+  lastPhaseIdx=pi;const ph=PHASES[pi];currentPhaseType=ph.type;
+  document.getElementById('lyrics-text').textContent=ph.lyrics;
+  const banner=document.getElementById('phase-banner');banner.textContent=ph.label;
+  banner.className=ph.type==='player'?'player':ph.type==='teacher'?'teacher':'intro';
+  const tEl=document.getElementById('teacher-sprite'),pEl=document.getElementById('player-sprite');
+  if(ph.type==='teacher'){setFrame('teacher-sprite',1);tEl.classList.add('sprite-singing');setFrame('player-sprite',0);pEl.classList.remove('sprite-singing');}
+  else if(ph.type==='player'){setFrame('teacher-sprite',0);tEl.classList.remove('sprite-singing');setFrame('player-sprite',1);pEl.classList.add('sprite-singing');}
+  else{setFrame('teacher-sprite',0);tEl.classList.remove('sprite-singing');setFrame('player-sprite',0);pEl.classList.remove('sprite-singing');}
+}
+
+// ══════════════════════════════════════════════════
+//  メインループ
+// ══════════════════════════════════════════════════
+function rafLoop(){
+  if(!gameActive) return;
+  const songT=actx.currentTime-songStart,beatNow=songT/B,W=getW();
+  notes.forEach(n=>{
+    if(!n.isTeacher&&!n.hit&&!n.missed&&n.time<songT-W.bad){
+      n.missed=true;hits.awful++;ratingScore=Math.max(0,ratingScore-5);updateRating();triggerReact(false);
+    }
+  });
+  drawHighway(songT);updatePhase(beatNow);
+  requestAnimationFrame(rafLoop);
+}
+
+// ══════════════════════════════════════════════════
+//  ゲームライフサイクル
+// ══════════════════════════════════════════════════
+function applySprites(){
+  const s=curSong(),teacher=getSongTeacher(s),player=selectedChar;
+  document.getElementById('player-sprite').style.backgroundImage=`url('${CHAR_ASSETS[player]}')`;
+  document.getElementById('teacher-sprite').style.backgroundImage=`url('${CHAR_ASSETS[teacher]}')`;
+  document.getElementById('player-label').textContent=CHAR_LABELS[player]+'（あなた）';
+  document.getElementById('teacher-label').textContent=CHAR_LABELS[teacher]+'（先生）';
+  document.getElementById('result-char').textContent=CHAR_EMOJIS[player];
+  document.getElementById('song-info-bar').textContent=`S${s.stage}-${s.idx+1} BPM${Math.round(s.bpm*DIFFS[currentDiff].bpmMul)}`;
+}
+
+function startGame(){
+  bootAudio();
+  const s=curSong(),diff=DIFFS[currentDiff];
+  BPM=s.bpm*diff.bpmMul; B=60/BPM; S=B/4; SONG_DUR=SONG_BEATS*B;
+  PHASES=buildPhases();
+  ['start','stage-select'].forEach(id=>document.getElementById(id).classList.add('hidden'));
+  document.getElementById('game').style.display='flex';
+  document.getElementById('result').style.display='none';
+  applySprites();
+  notes=makeChart();buildDrumEvents();buildMelodyEvents();
+  score=0;hits={cool:0,good:0,bad:0,awful:0};ratingScore=50;
+  lastPhaseIdx=-1;currentPhaseType='intro';schedPtr=0;melodyPtr=0;
+  initCanvas();updateRating();
+  document.getElementById('gvol').value=masterVol*100;
+  actx.resume().then(()=>{songStart=actx.currentTime+.1;gameActive=true;scheduleSong();requestAnimationFrame(rafLoop);});
+}
+
+function endSong(){
+  gameActive=false;clearTimeout(schedTimer);
+  const s=curSong();
+  const hitTotal=hits.cool+hits.good+hits.bad;
+  const total=notes.filter(n=>!n.isTeacher).length;
+  const passed=ratingScore>=30;
+  if(passed) clearedSongs.add(s.id);
+  let rank;
+  if(ratingScore>=80)rank='🌟 クール！';
+  else if(ratingScore>=55)rank='👊 グッド！';
+  else if(ratingScore>=30)rank='😅 バッド...';
+  else rank='💀 最悪';
+  document.getElementById('game').style.display='none';
+  const res=document.getElementById('result');res.style.display='flex';
+  document.getElementById('result-rank').textContent=rank;
+  document.getElementById('result-stats').innerHTML=
+    `<b>${s.title}</b><br>スコア: ${score}<br>`+
+    `クール: ${hits.cool} / グッド: ${hits.good} / バッド: ${hits.bad} / ミス: ${hits.awful}<br>`+
+    `ヒット率: ${Math.round(hitTotal/Math.max(1,total)*100)}%<br>`+
+    `難易度: ${DIFFS[currentDiff].label} — BPM ${Math.round(BPM)}`;
+  // ボタン制御
+  const nextBtn=document.getElementById('next-song-btn');
+  const clearBtn=document.getElementById('stage-clear-btn');
+  const retryBtn=document.getElementById('retry-btn');
+  [nextBtn,clearBtn,retryBtn].forEach(b=>b.classList.add('hidden'));
+  if(passed){
+    const stageSongs=SONGS.filter(sg=>sg.stage===s.stage).sort((a,b)=>a.idx-b.idx);
+    const nextInStage=stageSongs.find(sg=>sg.idx===s.idx+1);
+    if(nextInStage){
+      nextBtn.textContent=`▶ 次の曲「${nextInStage.title}」へ！`;
+      nextBtn.classList.remove('hidden');
+    } else {
+      // ステージ内全曲クリア確認
+      const allCleared=stageSongs.every(sg=>clearedSongs.has(sg.id));
+      if(allCleared&&s.stage<5){
+        clearBtn.textContent=`🌟 ステージ${s.stage}クリア！次のステージへ`;
+        clearBtn.classList.remove('hidden');
+      } else {
+        clearBtn.textContent=`🏆 ステージ${s.stage}クリア！`;
+        clearBtn.classList.remove('hidden');
+      }
+    }
+  } else {
+    retryBtn.classList.remove('hidden');
+  }
+}
+
+// ステージ選択画面
+function isStageUnlocked(stageNum){
+  if(stageNum===1) return true;
+  return SONGS.filter(s=>s.stage===stageNum-1).every(s=>clearedSongs.has(s.id));
+}
+function renderStageSelect(){
+  const list=document.getElementById('stage-list');list.innerHTML='';
+  STAGES.forEach(st=>{
+    const unlocked=isStageUnlocked(st.id);
+    const stageSongs=SONGS.filter(s=>s.stage===st.id);
+    const teacher=st.teacher;
+    const card=document.createElement('div');
+    card.className='stage-card '+(unlocked?'unlocked':'locked');
+    // 現在進行中ステージ判定
+    const inProg=unlocked&&stageSongs.some(s=>!clearedSongs.has(s.id));
+    if(inProg) card.classList.add('current-stage');
+    const dots=stageSongs.map(s=>`<span class="sdot ${clearedSongs.has(s.id)?'done':'todo'}">${clearedSongs.has(s.id)?'●':'○'}</span>`).join('');
+    card.innerHTML=`
+      <div class="stage-info">
+        <div class="stage-num">${st.emoji} STAGE ${st.id}</div>
+        <div class="stage-name">${st.name}</div>
+        <div class="stage-dots">${unlocked?dots:'🔒 前のステージをクリア'}</div>
+      </div>
+      <div class="stage-thumb" style="background-image:url('${CHAR_ASSETS[teacher]}')"></div>`;
+    if(unlocked){
+      card.addEventListener('click',()=>{
+        const firstUnclear=stageSongs.sort((a,b)=>a.idx-b.idx).find(s=>!clearedSongs.has(s.id));
+        currentSongId=(firstUnclear||stageSongs[0]).id;
+        startGame();
+      });
+    }
+    list.appendChild(card);
+  });
+}
+
+// ══════════════════════════════════════════════════
+//  入力・初期化
+// ══════════════════════════════════════════════════
+document.addEventListener('DOMContentLoaded',()=>{
+  // キャラ選択
+  document.querySelectorAll('.char-card').forEach(c=>{
+    c.addEventListener('click',()=>{document.querySelectorAll('.char-card').forEach(x=>x.classList.remove('selected'));c.classList.add('selected');selectedChar=c.dataset.char;});
+  });
+  // 難易度選択
+  document.querySelectorAll('.diff-btn').forEach(b=>{
+    b.addEventListener('click',()=>{document.querySelectorAll('.diff-btn').forEach(x=>x.classList.remove('selected'));b.classList.add('selected');currentDiff=b.dataset.diff;});
+  });
+  // ボリューム（スタート画面）
+  document.getElementById('vol-slider').addEventListener('input',e=>{masterVol=e.target.value/100;if(masterGain)masterGain.gain.value=masterVol;});
+  // ボリューム（ゲーム内）
+  document.getElementById('gvol').addEventListener('input',e=>{masterVol=e.target.value/100;if(masterGain)masterGain.gain.value=masterVol;document.getElementById('vol-slider').value=e.target.value;});
+  // スタートボタン → ステージ選択へ
+  document.getElementById('start-btn').addEventListener('click',()=>{
+    bootAudio();
+    document.getElementById('start').classList.add('hidden');
+    document.getElementById('stage-select').classList.remove('hidden');
+    renderStageSelect();
+  });
+  // ステージ選択 → 戻る
+  document.getElementById('back-from-stage').addEventListener('click',()=>{
+    document.getElementById('stage-select').classList.add('hidden');
+    document.getElementById('start').classList.remove('hidden');
+  });
+  // リザルトボタン
+  document.getElementById('next-song-btn').addEventListener('click',()=>{
+    const s=curSong();const next=SONGS.find(sg=>sg.stage===s.stage&&sg.idx===s.idx+1);
+    if(next){currentSongId=next.id;startGame();}
+  });
+  document.getElementById('stage-clear-btn').addEventListener('click',()=>{
+    document.getElementById('result').style.display='none';
+    document.getElementById('stage-select').classList.remove('hidden');
+    renderStageSelect();
+  });
+  document.getElementById('retry-btn').addEventListener('click',()=>startGame());
+  document.getElementById('title-btn').addEventListener('click',()=>{
+    gameActive=false;clearTimeout(schedTimer);
+    document.getElementById('result').style.display='none';
+    document.getElementById('stage-select').classList.remove('hidden');
+    renderStageSelect();
+  });
+  // ゲームボタン
+  document.querySelectorAll('.btn').forEach(btn=>{
+    const lane=parseInt(btn.dataset.lane);
+    btn.addEventListener('touchstart',e=>{e.preventDefault();onButton(lane);},{passive:false});
+    btn.addEventListener('mousedown',e=>{e.preventDefault();onButton(lane);});
+  });
+  // キーボード
+  const keyMap={'a':0,'ArrowLeft':0,'s':1,'ArrowUp':1,'d':2,'ArrowRight':2,' ':3,'ArrowDown':3};
+  document.addEventListener('keydown',e=>{if(keyMap[e.key]!==undefined){e.preventDefault();onButton(keyMap[e.key]);}});
+  // AudioContext再開
+  document.addEventListener('touchstart',()=>{if(actx&&actx.state==='suspended')actx.resume();},{passive:true});
+  // リサイズ
+  window.addEventListener('resize',()=>{if(canvas)canvas.width=window.innerWidth;});
+});
+</script>
+</body>
+</html>
