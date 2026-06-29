@@ -235,6 +235,19 @@ canvas#hw{display:block;width:100%;}
 .rank-bad #result-score-big{color:#FF8844;}
 .rank-awful #result-rank{color:#FF5566;animation:rank-pop .6s cubic-bezier(.2,.8,.3,1.2) .3s both;}
 .rank-awful #result-score-big{color:#FF5566;}
+
+/* 称号 */
+#result-title-wrap{text-align:center;margin:2px 0 4px;}
+#result-title-emoji{font-size:1.6rem;display:block;line-height:1.2;}
+#result-title-text{font-size:1.05rem;font-weight:900;color:#FFD166;
+  text-shadow:0 0 14px rgba(255,209,102,.7);letter-spacing:.06em;margin:2px 0;}
+.result-title-sublabel{font-size:.55rem;color:rgba(255,255,255,.4);letter-spacing:.2em;}
+
+/* 自動進行バー */
+#result-advance-wrap{width:100%;margin-top:4px;}
+#result-advance-text{font-size:.62rem;color:rgba(255,255,255,.45);text-align:center;margin-bottom:4px;letter-spacing:.06em;}
+#result-advance-track{width:100%;height:4px;background:rgba(255,255,255,.12);border-radius:2px;overflow:hidden;}
+#result-advance-fill{height:100%;background:linear-gradient(90deg,#FFD166,#6BFF8A);width:0%;}
 </style>
 </head>
 <body>
@@ -331,8 +344,13 @@ canvas#hw{display:block;width:100%;}
       <span id="result-rank-emoji">🌟</span>
       <h2 id="result-rank">クール！</h2>
     </div>
+    <div id="result-title-wrap">
+      <span id="result-title-emoji">🌱</span>
+      <div id="result-title-text">リズム見習い</div>
+      <div class="result-title-sublabel">称　号</div>
+    </div>
     <div id="result-score-big">0</div>
-    <div id="result-score-label">SCORE</div>
+    <div id="result-score-label">累計スコア</div>
     <div id="result-song-title">—</div>
     <div id="result-bars-wrap">
       <div class="res-bar-row">
@@ -357,6 +375,10 @@ canvas#hw{display:block;width:100%;}
       </div>
     </div>
     <div id="result-diff-line">—</div>
+    <div id="result-advance-wrap" class="hidden">
+      <div id="result-advance-text">自動で次へ...</div>
+      <div id="result-advance-track"><div id="result-advance-fill"></div></div>
+    </div>
     <div id="result-btns">
       <button class="res-btn hidden" id="next-song-btn">▶ 次の曲へ！</button>
       <button class="res-btn hidden" id="stage-clear-btn">🌟 ステージクリア！</button>
@@ -374,7 +396,62 @@ canvas#hw{display:block;width:100%;}
 // ══════════════════════════════════════════════════
 let selectedChar = 'panda', currentDiff = 'normal', masterVol = 0.8;
 let currentSongId = 0;
-let clearedSongs  = new Set(); // クリア済み曲ID
+let clearedSongs  = new Set();
+let totalScore = 0;
+let autoAdvTimer = null;
+
+// ── 30段階称号 ──
+const TITLE_RANKS = [
+  {min:0,      emoji:'🌱', title:'リズム見習い'},
+  {min:500,    emoji:'🎵', title:'ビートの初心者'},
+  {min:1500,   emoji:'👣', title:'タップ入門生'},
+  {min:3000,   emoji:'🎯', title:'リズム挑戦者'},
+  {min:5500,   emoji:'🔍', title:'ビート探求者'},
+  {min:9000,   emoji:'⚡', title:'リズム修行者'},
+  {min:13500,  emoji:'🎹', title:'拍子の使い手'},
+  {min:19000,  emoji:'🎨', title:'タップアーティスト'},
+  {min:25500,  emoji:'🌊', title:'ビートライダー'},
+  {min:33000,  emoji:'🔨', title:'リズム職人'},
+  {min:41500,  emoji:'⚔️', title:'音楽の戦士'},
+  {min:51000,  emoji:'🛡️', title:'ビートソルジャー'},
+  {min:61500,  emoji:'🎓', title:'リズムの師匠'},
+  {min:72000,  emoji:'💎', title:'タップの達人'},
+  {min:80000,  emoji:'🏇', title:'音楽の騎士'},
+  {min:87500,  emoji:'🗡️', title:'ビートの侍'},
+  {min:94500,  emoji:'💪', title:'リズムの猛者'},
+  {min:101000, emoji:'🏯', title:'音楽の将軍'},
+  {min:107000, emoji:'👑', title:'ビートマスター'},
+  {min:113000, emoji:'🌟', title:'リズムの覇者'},
+  {min:118000, emoji:'👹', title:'音楽の魔王'},
+  {min:122500, emoji:'👸', title:'ビートの姫'},
+  {min:126000, emoji:'🤴', title:'リズムの王子'},
+  {min:129000, emoji:'🦁', title:'音楽の大王'},
+  {min:131500, emoji:'💫', title:'ビートの帝王'},
+  {min:134000, emoji:'🔮', title:'リズムの神官'},
+  {min:136000, emoji:'✨', title:'音楽の神'},
+  {min:138000, emoji:'🌈', title:'ビートの伝説'},
+  {min:140000, emoji:'⭐', title:'リズムの神'},
+  {min:142000, emoji:'🏆', title:'究極のリズム王'},
+];
+function getTitle(s){
+  let t=TITLE_RANKS[0];
+  for(const r of TITLE_RANKS){if(s>=r.min)t=r;else break;}
+  return t;
+}
+function cancelAutoAdv(){
+  if(autoAdvTimer){clearTimeout(autoAdvTimer);autoAdvTimer=null;}
+  document.getElementById('result-advance-wrap').classList.add('hidden');
+}
+function startAutoAdv(cb){
+  const wrap=document.getElementById('result-advance-wrap');
+  const fill=document.getElementById('result-advance-fill');
+  wrap.classList.remove('hidden');
+  fill.style.transition='none'; fill.style.width='0%';
+  requestAnimationFrame(()=>requestAnimationFrame(()=>{
+    fill.style.transition='width 2.5s linear'; fill.style.width='100%';
+  }));
+  autoAdvTimer=setTimeout(()=>{stopParticles();cb();},2500);
+}
 
 const CHAR_ASSETS = { rabbit:'assets/rabbit.jpeg', fox:'assets/fox.jpeg', panda:'assets/panda.jpeg', rhino:'assets/rhino.jpeg', husky:'assets/husky.jpeg', horse:'assets/horse.jpeg' };
 const CHAR_LABELS = { rabbit:'ウサギ', fox:'キツネ', panda:'パンダ', rhino:'サイ', husky:'ハスキー', horse:'ホース' };
@@ -1081,12 +1158,13 @@ function countUp(el,target,dur=900){
 }
 
 function endSong(){
-  gameActive=false;clearTimeout(schedTimer);
+  gameActive=false;clearTimeout(schedTimer);cancelAutoAdv();
   const s=curSong();
   const hitTotal=hits.cool+hits.good+hits.bad;
   const total=notes.filter(n=>!n.isTeacher).length;
   const passed=ratingScore>=30;
   if(passed) clearedSongs.add(s.id);
+  totalScore+=score;
 
   let rankKey,rankEmoji,rankText,bgGrad,ptcType;
   if(ratingScore>=80){
@@ -1099,7 +1177,7 @@ function endSong(){
     rankKey='bad';rankEmoji='😅';rankText='バッド...';
     bgGrad='linear-gradient(160deg,#1a0a00,#1a0a2e)';ptcType='spark';
   } else {
-    rankKey='awful';rankEmoji='💀';rankText='最悪';
+    rankKey='awful';rankEmoji='💀';rankText='ゲームオーバー';
     bgGrad='linear-gradient(160deg,#1a0000,#0a000a)';ptcType='none';
   }
 
@@ -1109,29 +1187,30 @@ function endSong(){
   res.className='';res.classList.add('rank-'+rankKey);
   document.getElementById('result-bg').style.background=bgGrad;
 
-  // キャラスプライト（クール→pose2 / それ以外→pose3）
   const sprEl=document.getElementById('result-char-sprite');
   sprEl.classList.remove('s0','s1','s2','s3','result-anim-enter','result-anim-bounce');
   void sprEl.offsetWidth;
   sprEl.classList.add(passed?'s2':'s3','result-anim-enter');
   setTimeout(()=>{ if(passed) sprEl.classList.add('result-anim-bounce'); },600);
 
-  // ランク
   document.getElementById('result-rank-emoji').textContent=rankEmoji;
   const rankEl=document.getElementById('result-rank');
   rankEl.textContent=rankText;
   rankEl.classList.remove('rank-pop');void rankEl.offsetWidth;rankEl.classList.add('rank-pop');
 
-  // スコアカウントアップ
-  countUp(document.getElementById('result-score-big'),score,1000);
+  // 称号
+  const tr=getTitle(totalScore);
+  document.getElementById('result-title-emoji').textContent=tr.emoji;
+  document.getElementById('result-title-text').textContent=tr.title;
 
-  // 曲タイトル・難易度
+  // 累計スコアカウントアップ
+  countUp(document.getElementById('result-score-big'),totalScore,1000);
+
   document.getElementById('result-song-title').textContent=`♪ ${s.title}`;
   const hitRate=Math.round(hitTotal/Math.max(1,total)*100);
   document.getElementById('result-diff-line').textContent=
-    `${DIFFS[currentDiff].label} — BPM ${Math.round(BPM)} — ヒット率 ${hitRate}%`;
+    `${DIFFS[currentDiff].label} — BPM ${Math.round(BPM)} — ヒット率 ${hitRate}% — 曲スコア ${score.toLocaleString()}`;
 
-  // ヒットバー
   const maxH=Math.max(hits.cool,hits.good,hits.bad,hits.awful,1);
   setTimeout(()=>{
     [['cool',hits.cool],['good',hits.good],['bad',hits.bad],['miss',hits.awful]].forEach(([k,v])=>{
@@ -1140,33 +1219,37 @@ function endSong(){
     });
   },200);
 
-  // パーティクル
   stopParticles();initParticles();spawnParticles(ptcType);
   if(ptcType!=='none') runParticles();
 
-  // ボタン制御
   const nextBtn=document.getElementById('next-song-btn');
   const clearBtn=document.getElementById('stage-clear-btn');
   const retryBtn=document.getElementById('retry-btn');
   [nextBtn,clearBtn,retryBtn].forEach(b=>b.classList.add('hidden'));
+
   if(passed){
     const stageSongs=SONGS.filter(sg=>sg.stage===s.stage).sort((a,b)=>a.idx-b.idx);
     const nextInStage=stageSongs.find(sg=>sg.idx===s.idx+1);
+    const allCleared=stageSongs.every(sg=>clearedSongs.has(sg.id));
+
     if(nextInStage){
+      // ステージ内の次の曲へ自動進行
       nextBtn.textContent=`▶ 次の曲「${nextInStage.title}」へ！`;
       nextBtn.classList.remove('hidden');
+      startAutoAdv(()=>{currentSongId=nextInStage.id;startGame();});
+    } else if(allCleared&&s.stage<6){
+      // 次のステージへ自動進行
+      clearBtn.textContent=`🌟 ステージ${s.stage}クリア！次のステージへ`;
+      clearBtn.classList.remove('hidden');
+      const nextStageSongs=SONGS.filter(sg=>sg.stage===s.stage+1).sort((a,b)=>a.idx-b.idx);
+      startAutoAdv(()=>{currentSongId=nextStageSongs[0].id;startGame();});
+    } else if(allCleared&&s.stage===6){
+      // 全ステージ制覇
+      clearBtn.textContent=`🎊 全ステージ制覇！伝説のリズム王者！`;
+      clearBtn.classList.remove('hidden');
     } else {
-      const allCleared=stageSongs.every(sg=>clearedSongs.has(sg.id));
-      if(allCleared&&s.stage<6){
-        clearBtn.textContent=`🌟 ステージ${s.stage}クリア！次のステージへ`;
-        clearBtn.classList.remove('hidden');
-      } else if(allCleared&&s.stage===6){
-        clearBtn.textContent=`🎊 全ステージ制覇！伝説のリズム王者！`;
-        clearBtn.classList.remove('hidden');
-      } else {
-        clearBtn.textContent=`🏆 ステージ${s.stage}クリア！`;
-        clearBtn.classList.remove('hidden');
-      }
+      clearBtn.textContent=`🏆 ステージ${s.stage}クリア！`;
+      clearBtn.classList.remove('hidden');
     }
   } else {
     retryBtn.classList.remove('hidden');
@@ -1224,9 +1307,10 @@ document.addEventListener('DOMContentLoaded',()=>{
   document.getElementById('vol-slider').addEventListener('input',e=>{masterVol=e.target.value/100;if(masterGain)masterGain.gain.value=masterVol;});
   // ボリューム（ゲーム内）
   document.getElementById('gvol').addEventListener('input',e=>{masterVol=e.target.value/100;if(masterGain)masterGain.gain.value=masterVol;document.getElementById('vol-slider').value=e.target.value;});
-  // スタートボタン → ステージ選択へ
+  // スタートボタン → ステージ選択へ（新セッション開始）
   document.getElementById('start-btn').addEventListener('click',()=>{
     bootAudio();
+    totalScore=0; clearedSongs=new Set();
     document.getElementById('start').classList.add('hidden');
     document.getElementById('stage-select').classList.remove('hidden');
     renderStageSelect();
@@ -1238,19 +1322,25 @@ document.addEventListener('DOMContentLoaded',()=>{
   });
   // リザルトボタン
   document.getElementById('next-song-btn').addEventListener('click',()=>{
-    stopParticles();
+    cancelAutoAdv();stopParticles();
     const s=curSong();const next=SONGS.find(sg=>sg.stage===s.stage&&sg.idx===s.idx+1);
     if(next){currentSongId=next.id;startGame();}
   });
   document.getElementById('stage-clear-btn').addEventListener('click',()=>{
-    stopParticles();
-    document.getElementById('result').style.display='none';
-    document.getElementById('stage-select').classList.remove('hidden');
-    renderStageSelect();
+    cancelAutoAdv();stopParticles();
+    const s=curSong();const allCleared=SONGS.filter(sg=>sg.stage===s.stage).every(sg=>clearedSongs.has(sg.id));
+    if(allCleared&&s.stage<6){
+      const nextSongs=SONGS.filter(sg=>sg.stage===s.stage+1).sort((a,b)=>a.idx-b.idx);
+      currentSongId=nextSongs[0].id;startGame();
+    } else {
+      document.getElementById('result').style.display='none';
+      document.getElementById('stage-select').classList.remove('hidden');
+      renderStageSelect();
+    }
   });
-  document.getElementById('retry-btn').addEventListener('click',()=>{stopParticles();startGame();});
+  document.getElementById('retry-btn').addEventListener('click',()=>{cancelAutoAdv();stopParticles();startGame();});
   document.getElementById('title-btn').addEventListener('click',()=>{
-    stopParticles();
+    cancelAutoAdv();stopParticles();
     gameActive=false;clearTimeout(schedTimer);
     document.getElementById('result').style.display='none';
     document.getElementById('stage-select').classList.remove('hidden');
