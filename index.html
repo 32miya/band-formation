@@ -239,8 +239,6 @@ canvas#hw{display:block;width:100%;}
 </head>
 <body>
 
-<audio id="bgm-player" preload="none"></audio>
-
 <!-- スタート画面 -->
 <div id="start" class="screen">
   <div style="font-size:2.8rem">🦊🐼🐰</div>
@@ -370,14 +368,6 @@ canvas#hw{display:block;width:100%;}
 
 <script>
 'use strict';
-// ══════════════════════════════════════════════════
-//  ローカルBGMオーディオ
-// ══════════════════════════════════════════════════
-const bgmAudio=document.getElementById('bgm-player');
-function isLocalAudioSong(){return !!curSong().audioSrc;}
-function bgmPlay(src,vol){bgmAudio.src=src;bgmAudio.volume=vol;bgmAudio.currentTime=0;bgmAudio.play().catch(()=>{});}
-function bgmStop(){bgmAudio.pause();bgmAudio.currentTime=0;}
-function bgmSetVol(v){bgmAudio.volume=v;}
 
 // ══════════════════════════════════════════════════
 //  定数・状態
@@ -541,30 +531,30 @@ const SONGS = [
   lyrics:['ドンドン太鼓で\n祭り開幕！','江戸の空に\n花火が上がる！','三味の音色が\n響き渡る！','夏祭り最高潮\n全力で！'],
 },
 {
-  id:9, title:'姫ビック', stage:5, idx:1, bpm:144, teacher:'horse', genre:'local_audio', audioSrc:'assets/姫ビック.mp3', beatOffset:0.697,
-  drumK:[1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0], drumS:[0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0],
-  drumH:[1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0], drumOH:[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-  bass:[110,0,0,0,98,0,0,0,82,0,0,0,110,0,0,0],
-  chords:[[220,294,440],[196,262,392],[175,220,330],[196,262,392],[220,294,440],[175,220,330],[196,262,392],[220,294,440]],
+  id:9, title:'姫ビック', stage:5, idx:1, bpm:144, teacher:'horse', genre:'hime_big',
+  drumK:[1,0,0,0,0,0,1,0,1,0,0,0,0,0,1,0], drumS:[0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0],
+  drumH:[0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0], drumOH:[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+  bass:[110,0,0,0,0,0,82,0,98,0,0,0,0,0,110,0],
+  chords:[[220,262,330],[196,247,294],[175,220,262],[185,220,277],[220,262,330],[196,247,294],[185,220,277],[220,262,330]],
   phrases:[
     [{b:0,l:0},{b:1,l:2},{b:2,l:1},{b:3,l:3},{b:4,l:0},{b:5,l:2},{b:6,l:1},{b:7,l:3}],
-    [{b:0,l:0},{b:.5,l:1},{b:2,l:2},{b:2.5,l:3},{b:4,l:0},{b:4.5,l:1},{b:6,l:2},{b:7,l:3}],
-    [{b:0,l:2},{b:1,l:0},{b:2,l:3},{b:2.5,l:1},{b:3,l:0},{b:4,l:2},{b:5,l:3},{b:5.5,l:1},{b:6,l:0},{b:7,l:2}],
-    [{b:0,l:0},{b:.5,l:3},{b:1,l:2},{b:2,l:1},{b:2.5,l:0},{b:3,l:3},{b:4,l:2},{b:4.5,l:1},{b:5,l:0},{b:6,l:3},{b:6.5,l:2},{b:7,l:1}],
+    [{b:0,l:0},{b:.5,l:1},{b:2,l:2},{b:2.5,l:3},{b:4,l:0},{b:4.5,l:1},{b:6,l:2},{b:6.5,l:3},{b:7,l:0}],
+    [{b:0,l:2},{b:.5,l:3},{b:1,l:2},{b:2,l:1},{b:2.5,l:0},{b:3,l:1},{b:4,l:2},{b:5,l:3},{b:5.5,l:2},{b:6,l:1},{b:7,l:0}],
+    [{b:0,l:0},{b:.5,l:3},{b:1,l:2},{b:1.5,l:1},{b:2,l:0},{b:3,l:2},{b:4,l:1},{b:4.5,l:3},{b:5,l:0},{b:5.5,l:2},{b:6,l:3},{b:6.5,l:1},{b:7,l:0}],
   ],
   lyrics:['将軍様の\nお出ましだ！','姫のリズムで\n天下を取れ！','三味線鳴らして\n舞い踊れ！','大当たり！姫BIG\n全力フィナーレ！'],
 },
 /* ─── Stage 6 (EX) ─── */
 {
-  id:10, title:'ハナビック', stage:6, idx:0, bpm:154, teacher:'rhino', genre:'local_audio', audioSrc:'assets/ハナビック.mp3', beatOffset:0,
-  drumK:[1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0], drumS:[0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0],
-  drumH:[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1], drumOH:[0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,1],
-  bass:[110,0,0,0,110,0,0,0,98,0,0,0,82,0,0,0],
-  chords:[[220,262,330],[175,220,262],[262,330,392],[196,247,294],[220,262,330],[175,220,262],[196,247,294],[220,262,330]],
+  id:10, title:'ハナビック', stage:6, idx:0, bpm:154, teacher:'rhino', genre:'hana_big',
+  drumK:[1,0,0,0,1,0,0,0,1,0,0,0,1,0,1,0], drumS:[0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0],
+  drumH:[1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0], drumOH:[0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,1],
+  bass:[131,0,0,0,131,0,0,0,117,0,0,0,131,0,0,0],
+  chords:[[262,330,392],[233,294,349],[262,330,392],[196,247,294],[262,330,392],[233,294,349],[262,330,392],[392,494,587]],
   phrases:[
-    [{b:0,l:0},{b:.5,l:2},{b:1,l:1},{b:1.5,l:3},{b:2,l:0},{b:3,l:2},{b:4,l:1},{b:4.5,l:3},{b:5,l:0},{b:6,l:2},{b:7,l:1}],
-    [{b:0,l:3},{b:.5,l:0},{b:1,l:2},{b:2,l:1},{b:2.5,l:3},{b:3,l:0},{b:3.5,l:2},{b:4,l:1},{b:5,l:3},{b:5.5,l:0},{b:6,l:2},{b:7,l:3}],
-    [{b:0,l:0},{b:.5,l:1},{b:1,l:2},{b:1.5,l:3},{b:2,l:0},{b:2.5,l:1},{b:3,l:2},{b:4,l:0},{b:4.5,l:3},{b:5,l:1},{b:5.5,l:2},{b:6,l:3},{b:7,l:0}],
+    [{b:0,l:0},{b:.5,l:2},{b:1,l:1},{b:2,l:3},{b:2.5,l:0},{b:3,l:2},{b:4,l:1},{b:5,l:3},{b:6,l:0},{b:7,l:2}],
+    [{b:0,l:1},{b:.5,l:3},{b:1,l:0},{b:1.5,l:2},{b:2,l:1},{b:3,l:3},{b:3.5,l:0},{b:4,l:2},{b:5,l:1},{b:5.5,l:3},{b:6,l:0},{b:7,l:2}],
+    [{b:0,l:0},{b:.5,l:1},{b:1,l:2},{b:1.5,l:3},{b:2,l:0},{b:2.5,l:1},{b:3,l:2},{b:4,l:3},{b:4.5,l:0},{b:5,l:1},{b:5.5,l:2},{b:6,l:3},{b:7,l:0}],
     [{b:0,l:0},{b:.5,l:3},{b:1,l:1},{b:1.5,l:2},{b:2,l:0},{b:2.5,l:3},{b:3,l:1},{b:3.5,l:2},{b:4,l:0},{b:4.5,l:1},{b:5,l:2},{b:5.5,l:3},{b:6,l:0},{b:6.5,l:1},{b:7,l:2}],
   ],
   lyrics:['ハナビが打ち上がる！\nリズムを刻め！','ドンBIG確定！\n全力でタップ！','連チャン爆発！\n止まるな！','ハナビック\nフィナーレ！'],
@@ -595,6 +585,34 @@ const WAJAPAN_MELODY = [
   {t:10,f:262},{t:10.5,f:294},{t:11,f:330},{t:11.5,f:392},
   {t:12,f:440},{t:12.5,f:392},{t:13,f:330},{t:13.5,f:294},
   {t:14,f:220},{t:14.5,f:294},{t:15,f:330},{t:15.5,f:440},
+];
+
+// 姫ビック 三味線メロディ（Aマイナーペンタトニック、吉宗の雰囲気）
+const HIME_BIG_MELODY = [
+  // フレーズA: 高音から荘厳に下降
+  {t:0,f:880},{t:.5,f:784},{t:1,f:659},{t:1.5,f:587},
+  {t:2,f:523},{t:2.5,f:440},{t:3,f:392},{t:3.5,f:330},
+  {t:4,f:294},{t:4.5,f:330},{t:5,f:392},{t:5.5,f:440},
+  {t:6,f:523},{t:6.5,f:587},{t:7,f:659},{t:7.5,f:784},
+  // フレーズB: クライマックス上昇→頂点
+  {t:8,f:440},{t:8.5,f:523},{t:9,f:659},{t:9.5,f:784},
+  {t:10,f:880},{t:10.5,f:1047},{t:11,f:880},{t:11.5,f:784},
+  {t:12,f:659},{t:12.5,f:587},{t:13,f:523},{t:13.5,f:440},
+  {t:14,f:392},{t:14.5,f:440},{t:15,f:523},{t:15.5,f:659},
+];
+
+// ハナビック アーケードメロディ（Cメジャー系、明るく速い）
+const HANA_BIG_MELODY = [
+  // フレーズA: 上昇ライン（HANABI感）
+  {t:0,f:523},{t:.5,f:659},{t:1,f:784},{t:1.5,f:880},
+  {t:2,f:1047},{t:2.5,f:880},{t:3,f:784},{t:3.5,f:659},
+  {t:4,f:523},{t:4.5,f:587},{t:5,f:659},{t:5.5,f:784},
+  {t:6,f:880},{t:6.5,f:784},{t:7,f:659},{t:7.5,f:523},
+  // フレーズB: 変奏（少し下降）
+  {t:8,f:466},{t:8.5,f:523},{t:9,f:587},{t:9.5,f:659},
+  {t:10,f:784},{t:10.5,f:880},{t:11,f:784},{t:11.5,f:659},
+  {t:12,f:587},{t:12.5,f:659},{t:13,f:784},{t:13.5,f:880},
+  {t:14,f:1047},{t:14.5,f:880},{t:15,f:784},{t:15.5,f:659},
 ];
 
 // ══════════════════════════════════════════════════
@@ -647,6 +665,23 @@ function playShamisen(t,freq,dur=.14){
   const bpf=actx.createBiquadFilter();bpf.type='bandpass';bpf.frequency.value=2200;bpf.Q.value=1.8;
   const g=G(.5,t);g.gain.setValueAtTime(.5,t);g.gain.setValueAtTime(.18,t+.04);
   g.gain.exponentialRampToValueAtTime(.001,t+dur);conn(o,bpf,g,DST());o.start(t);o.stop(t+dur+.02);
+}
+// アーケード電子音（ハナビック用）
+function playArpNote(t,freq,gain=0.09){
+  if(!actx) return;
+  const o=actx.createOscillator();
+  const filt=actx.createBiquadFilter();
+  const g=G(gain,t);
+  o.type='sawtooth'; o.frequency.value=freq;
+  filt.type='lowpass'; filt.frequency.value=freq*3.5; filt.Q.value=2;
+  g.gain.exponentialRampToValueAtTime(.001,t+.22);
+  conn(o,filt,g,DST()); o.start(t); o.stop(t+.25);
+  // 倍音（明るさ追加）
+  const o2=actx.createOscillator();
+  const g2=G(gain*.3,t);
+  o2.type='sine'; o2.frequency.value=freq*2;
+  g2.gain.exponentialRampToValueAtTime(.001,t+.12);
+  conn(o2,g2,DST()); o2.start(t); o2.stop(t+.15);
 }
 // 太鼓（和風曲用）
 function playTaiko(t,big=false){
@@ -709,8 +744,9 @@ function buildDrumEvents(){
 function buildMelodyEvents(){
   melodyEvts=[];
   const g=curSong().genre;
-  if(g!=='wajapan') return;
-  const src=WAJAPAN_MELODY;
+  const MELODY_MAP={wajapan:WAJAPAN_MELODY,hime_big:HIME_BIG_MELODY,hana_big:HANA_BIG_MELODY};
+  const src=MELODY_MAP[g];
+  if(!src) return;
   const cycleBeats=16;
   const cycles=Math.ceil(SONG_BEATS/cycleBeats);
   for(let c=0;c<cycles;c++){
@@ -725,31 +761,28 @@ function scheduleSong(){
   if(!gameActive) return;
   const songNow=actx.currentTime-songStart;
   const AHEAD=0.22;
-  // ドラム（local_audio曲はMP3が音源なのでWeb Audio合成スキップ）
-  if(!isLocalAudioSong()){
-    while(schedPtr<drumEvts.length&&drumEvts[schedPtr].t<songNow+AHEAD){
-      const ev=drumEvts[schedPtr];const t=songStart+ev.t;
-      if(t<actx.currentTime-.01){schedPtr++;continue;}
-      const wa=curSong().genre==='wajapan';
-      if(ev.kick)    wa?playTaiko(t,true):playKick(t);
-      if(ev.snare)   wa?playTaiko(t,false):playSnare(t);
-      if(ev.hat&&!wa)    playHat(t,false);
-      if(ev.openHat&&!wa)playHat(t,true);
-      if(ev.bass)    playBass(t,ev.bass);
-      if(ev.chord)   playChord(t,ev.chord,.22,.12);
-      if(ev.chord2)  playChord(t,ev.chord2,.16,.1);
-      schedPtr++;
+  // ドラム＋メロディ合成
+  while(schedPtr<drumEvts.length&&drumEvts[schedPtr].t<songNow+AHEAD){
+    const ev=drumEvts[schedPtr];const t=songStart+ev.t;
+    if(t<actx.currentTime-.01){schedPtr++;continue;}
+    const wa=curSong().genre==='wajapan'||curSong().genre==='hime_big';
+    if(ev.kick)    wa?playTaiko(t,true):playKick(t);
+    if(ev.snare)   wa?playTaiko(t,false):playSnare(t);
+    if(ev.hat&&!wa)    playHat(t,false);
+    if(ev.openHat&&!wa)playHat(t,true);
+    if(ev.bass)    playBass(t,ev.bass);
+    if(ev.chord)   playChord(t,ev.chord,.22,.12);
+    if(ev.chord2)  playChord(t,ev.chord2,.16,.1);
+    schedPtr++;
+  }
+  // メロディ
+  while(melodyPtr<melodyEvts.length&&melodyEvts[melodyPtr].t<songNow+AHEAD){
+    const m=melodyEvts[melodyPtr];const t=songStart+m.t;
+    if(t>=actx.currentTime-.01){
+      if(curSong().genre==='hana_big') playArpNote(t,m.f);
+      else playShamisen(t,m.f,.13);
     }
-    // 三味線メロディ
-    while(melodyPtr<melodyEvts.length&&melodyEvts[melodyPtr].t<songNow+AHEAD){
-      const m=melodyEvts[melodyPtr];const t=songStart+m.t;
-      if(t>=actx.currentTime-.01) playShamisen(t,m.f,.13);
-      melodyPtr++;
-    }
-  } else {
-    // local_audio：MP3再生中なのでポインタだけ進める
-    while(schedPtr<drumEvts.length&&drumEvts[schedPtr].t<songNow+AHEAD) schedPtr++;
-    while(melodyPtr<melodyEvts.length&&melodyEvts[melodyPtr].t<songNow+AHEAD) melodyPtr++;
+    melodyPtr++;
   }
   // 先生ノート自動演奏＋ボタンフラッシュ
   const songT=actx.currentTime-songStart;
@@ -988,10 +1021,7 @@ function startGame(){
   lastPhaseIdx=-1;currentPhaseType='intro';schedPtr=0;melodyPtr=0;
   initCanvas();updateRating();
   document.getElementById('gvol').value=masterVol*100;
-  // local_audio曲はMP3再生（ユーザー操作直後に呼ぶ必要がある）
-  const beatOfs=curSong().beatOffset||0;
-  if(isLocalAudioSong()) bgmPlay(curSong().audioSrc,masterVol);
-  actx.resume().then(()=>{songStart=actx.currentTime+0.1+beatOfs;gameActive=true;scheduleSong();requestAnimationFrame(rafLoop);});
+  actx.resume().then(()=>{songStart=actx.currentTime+.1;gameActive=true;scheduleSong();requestAnimationFrame(rafLoop);});
 }
 
 // ══ パーティクル ══
@@ -1052,7 +1082,6 @@ function countUp(el,target,dur=900){
 
 function endSong(){
   gameActive=false;clearTimeout(schedTimer);
-  if(isLocalAudioSong()) bgmStop();
   const s=curSong();
   const hitTotal=hits.cool+hits.good+hits.bad;
   const total=notes.filter(n=>!n.isTeacher).length;
@@ -1192,9 +1221,9 @@ document.addEventListener('DOMContentLoaded',()=>{
     b.addEventListener('click',()=>{document.querySelectorAll('.diff-btn').forEach(x=>x.classList.remove('selected'));b.classList.add('selected');currentDiff=b.dataset.diff;});
   });
   // ボリューム（スタート画面）
-  document.getElementById('vol-slider').addEventListener('input',e=>{masterVol=e.target.value/100;if(masterGain)masterGain.gain.value=masterVol;bgmSetVol(masterVol);});
+  document.getElementById('vol-slider').addEventListener('input',e=>{masterVol=e.target.value/100;if(masterGain)masterGain.gain.value=masterVol;});
   // ボリューム（ゲーム内）
-  document.getElementById('gvol').addEventListener('input',e=>{masterVol=e.target.value/100;if(masterGain)masterGain.gain.value=masterVol;bgmSetVol(masterVol);document.getElementById('vol-slider').value=e.target.value;});
+  document.getElementById('gvol').addEventListener('input',e=>{masterVol=e.target.value/100;if(masterGain)masterGain.gain.value=masterVol;document.getElementById('vol-slider').value=e.target.value;});
   // スタートボタン → ステージ選択へ
   document.getElementById('start-btn').addEventListener('click',()=>{
     bootAudio();
