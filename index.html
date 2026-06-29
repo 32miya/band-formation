@@ -4,7 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=no,viewport-fit=cover">
 <title>ラップバトル！</title>
-<script src="https://www.youtube.com/iframe_api"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;user-select:none;-webkit-tap-highlight-color:transparent;touch-action:manipulation;}
 html,body{width:100%;height:100%;overflow:hidden;background:#1a0a2e;font-family:'Arial Black','Impact',sans-serif;color:#fff;}
@@ -240,14 +239,13 @@ canvas#hw{display:block;width:100%;}
 </head>
 <body>
 
-<!-- YouTube非表示プレイヤー -->
-<div id="yt-player" style="position:fixed;left:-9999px;top:-9999px;width:1px;height:1px;pointer-events:none;"></div>
+<audio id="bgm-player" preload="none"></audio>
 
 <!-- スタート画面 -->
 <div id="start" class="screen">
   <div style="font-size:2.8rem">🦊🐼🐰</div>
   <h1>ラップバトル！</h1>
-  <div class="sub">ステージ制リズムゲーム — 全5ステージ10曲</div>
+  <div class="sub">ステージ制リズムゲーム — 全6ステージ11曲</div>
   <div class="sec-label">▶ キャラクター選択</div>
   <div id="char-row">
     <div class="char-card" data-char="rabbit">
@@ -373,22 +371,13 @@ canvas#hw{display:block;width:100%;}
 <script>
 'use strict';
 // ══════════════════════════════════════════════════
-//  YouTube IFrame API
+//  ローカルBGMオーディオ
 // ══════════════════════════════════════════════════
-let ytPlayer=null,ytReady=false;
-const YT_VIDEO_ID='noe9z8baceg'; // そこにあるかも知れない... CR吉宗2
-
-window.onYouTubeIframeAPIReady=function(){
-  ytPlayer=new YT.Player('yt-player',{
-    videoId:YT_VIDEO_ID,
-    playerVars:{autoplay:0,controls:0,disablekb:1,fs:0,iv_load_policy:3,modestbranding:1,rel:0,playsinline:1},
-    events:{onReady:()=>{ytReady=true;ytPlayer.setVolume(Math.round(masterVol*100));}}
-  });
-};
-function ytPlay(){if(ytReady&&ytPlayer){ytPlayer.seekTo(0,true);ytPlayer.setVolume(Math.round(masterVol*100));ytPlayer.playVideo();}}
-function ytStop(){if(ytReady&&ytPlayer)ytPlayer.stopVideo();}
-function ytSetVol(v){if(ytReady&&ytPlayer)ytPlayer.setVolume(Math.round(v*100));}
-function isYtSong(){return curSong().genre==='yoshimune';}
+const bgmAudio=document.getElementById('bgm-player');
+function isLocalAudioSong(){return !!curSong().audioSrc;}
+function bgmPlay(src,vol){bgmAudio.src=src;bgmAudio.volume=vol;bgmAudio.currentTime=0;bgmAudio.play().catch(()=>{});}
+function bgmStop(){bgmAudio.pause();bgmAudio.currentTime=0;}
+function bgmSetVol(v){bgmAudio.volume=v;}
 
 // ══════════════════════════════════════════════════
 //  定数・状態
@@ -413,6 +402,7 @@ const STAGES = [
   { id:3, name:'エレクトロの殿堂',   teacher:'rhino', emoji:'⚡' },
   { id:4, name:'ロックの要塞',       teacher:'husky', emoji:'🎸' },
   { id:5, name:'吉宗の天守閣',       teacher:'horse', emoji:'🏯' },
+  { id:6, name:'EX パチスロ伝説！',  teacher:'rhino', emoji:'🎰' },
 ];
 
 // ══════════════════════════════════════════════════
@@ -551,7 +541,7 @@ const SONGS = [
   lyrics:['ドンドン太鼓で\n祭り開幕！','江戸の空に\n花火が上がる！','三味の音色が\n響き渡る！','夏祭り最高潮\n全力で！'],
 },
 {
-  id:9, title:'姫のうた ～吉宗style～', stage:5, idx:1, bpm:158, teacher:'horse', genre:'yoshimune',
+  id:9, title:'姫ビック', stage:5, idx:1, bpm:158, teacher:'horse', genre:'local_audio', audioSrc:'assets/姫ビック.mp3',
   drumK:[1,0,0,0,1,0,1,0,1,0,0,1,0,1,0,0], drumS:[0,0,1,0,0,1,0,0,0,0,1,0,1,0,0,1],
   drumH:[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0], drumOH:[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
   bass:[110,0,110,0,0,98,0,110,98,0,0,82,0,0,110,0],
@@ -563,6 +553,21 @@ const SONGS = [
     [{b:0,l:2},{b:.5,l:3},{b:1,l:0},{b:1.5,l:1},{b:2,l:2},{b:2.5,l:3},{b:3,l:0},{b:3.5,l:1},{b:4,l:2},{b:4.5,l:3},{b:5,l:0},{b:5.5,l:1},{b:6,l:2},{b:6.5,l:3},{b:7,l:0}],
   ],
   lyrics:['将軍様の\nお出ましだ！','姫のリズムで\n天下を取れ！','三味線鳴らして\n舞い踊れ！','大当たり！姫BIG\n全力フィナーレ！'],
+},
+/* ─── Stage 6 (EX) ─── */
+{
+  id:10, title:'ハナビック', stage:6, idx:0, bpm:170, teacher:'rhino', genre:'local_audio', audioSrc:'assets/ハナビック.mp3',
+  drumK:[1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0], drumS:[0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0],
+  drumH:[1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0], drumOH:[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+  bass:[110,0,0,0,110,0,0,0,98,0,0,0,82,0,0,0],
+  chords:[[220,262,330],[175,220,262],[262,330,392],[196,247,294],[220,262,330],[175,220,262],[196,247,294],[220,262,330]],
+  phrases:[
+    [{b:0,l:0},{b:.5,l:2},{b:1,l:0},{b:1.5,l:2},{b:2,l:1},{b:3,l:3},{b:4,l:0},{b:4.5,l:2},{b:5,l:1},{b:6,l:3},{b:7,l:0}],
+    [{b:0,l:3},{b:.5,l:1},{b:1,l:3},{b:1.5,l:0},{b:2,l:2},{b:2.5,l:0},{b:3,l:2},{b:3.5,l:1},{b:4,l:3},{b:5,l:0},{b:6,l:2},{b:7,l:1}],
+    [{b:0,l:1},{b:.5,l:0},{b:1,l:2},{b:1.5,l:3},{b:2,l:1},{b:2.5,l:0},{b:3,l:2},{b:4,l:1},{b:4.5,l:3},{b:5,l:0},{b:5.5,l:2},{b:6,l:1},{b:7,l:3}],
+    [{b:0,l:0},{b:.5,l:1},{b:1,l:2},{b:1.5,l:3},{b:2,l:0},{b:2.5,l:1},{b:3,l:2},{b:3.5,l:3},{b:4,l:1},{b:4.5,l:0},{b:5,l:3},{b:5.5,l:2},{b:6,l:0},{b:6.5,l:1},{b:7,l:2}],
+  ],
+  lyrics:['ハナビが打ち上がる！\nリズムを刻め！','ドンBIG確定！\n全力でタップ！','連チャン爆発！\n止まるな！','ハナビック\nフィナーレ！'],
 },
 ];
 
@@ -704,8 +709,8 @@ function buildDrumEvents(){
 function buildMelodyEvents(){
   melodyEvts=[];
   const g=curSong().genre;
-  if(g!=='yoshimune'&&g!=='wajapan') return;
-  const src=g==='yoshimune'?YOSHIMUNE_MELODY:WAJAPAN_MELODY;
+  if(g!=='wajapan') return;
+  const src=WAJAPAN_MELODY;
   const cycleBeats=16;
   const cycles=Math.ceil(SONG_BEATS/cycleBeats);
   for(let c=0;c<cycles;c++){
@@ -720,8 +725,8 @@ function scheduleSong(){
   if(!gameActive) return;
   const songNow=actx.currentTime-songStart;
   const AHEAD=0.22;
-  // ドラム（yoshimune曲はYouTubeが音源なのでWeb Audio合成スキップ）
-  if(!isYtSong()){
+  // ドラム（local_audio曲はMP3が音源なのでWeb Audio合成スキップ）
+  if(!isLocalAudioSong()){
     while(schedPtr<drumEvts.length&&drumEvts[schedPtr].t<songNow+AHEAD){
       const ev=drumEvts[schedPtr];const t=songStart+ev.t;
       if(t<actx.currentTime-.01){schedPtr++;continue;}
@@ -742,7 +747,7 @@ function scheduleSong(){
       melodyPtr++;
     }
   } else {
-    // yoshimune：ドラム・メロディのスケジュールポインタだけ進める
+    // local_audio：MP3再生中なのでポインタだけ進める
     while(schedPtr<drumEvts.length&&drumEvts[schedPtr].t<songNow+AHEAD) schedPtr++;
     while(melodyPtr<melodyEvts.length&&melodyEvts[melodyPtr].t<songNow+AHEAD) melodyPtr++;
   }
@@ -983,8 +988,8 @@ function startGame(){
   lastPhaseIdx=-1;currentPhaseType='intro';schedPtr=0;melodyPtr=0;
   initCanvas();updateRating();
   document.getElementById('gvol').value=masterVol*100;
-  // yoshimune曲はYouTube再生（ユーザー操作直後に呼ぶ必要がある）
-  if(isYtSong()) ytPlay();
+  // local_audio曲はMP3再生（ユーザー操作直後に呼ぶ必要がある）
+  if(isLocalAudioSong()) bgmPlay(curSong().audioSrc,masterVol);
   actx.resume().then(()=>{songStart=actx.currentTime+.1;gameActive=true;scheduleSong();requestAnimationFrame(rafLoop);});
 }
 
@@ -1046,7 +1051,7 @@ function countUp(el,target,dur=900){
 
 function endSong(){
   gameActive=false;clearTimeout(schedTimer);
-  if(isYtSong()) ytStop();
+  if(isLocalAudioSong()) bgmStop();
   const s=curSong();
   const hitTotal=hits.cool+hits.good+hits.bad;
   const total=notes.filter(n=>!n.isTeacher).length;
@@ -1122,8 +1127,11 @@ function endSong(){
       nextBtn.classList.remove('hidden');
     } else {
       const allCleared=stageSongs.every(sg=>clearedSongs.has(sg.id));
-      if(allCleared&&s.stage<5){
+      if(allCleared&&s.stage<6){
         clearBtn.textContent=`🌟 ステージ${s.stage}クリア！次のステージへ`;
+        clearBtn.classList.remove('hidden');
+      } else if(allCleared&&s.stage===6){
+        clearBtn.textContent=`🎊 全ステージ制覇！パチスロ伝説達成！`;
         clearBtn.classList.remove('hidden');
       } else {
         clearBtn.textContent=`🏆 ステージ${s.stage}クリア！`;
@@ -1183,9 +1191,9 @@ document.addEventListener('DOMContentLoaded',()=>{
     b.addEventListener('click',()=>{document.querySelectorAll('.diff-btn').forEach(x=>x.classList.remove('selected'));b.classList.add('selected');currentDiff=b.dataset.diff;});
   });
   // ボリューム（スタート画面）
-  document.getElementById('vol-slider').addEventListener('input',e=>{masterVol=e.target.value/100;if(masterGain)masterGain.gain.value=masterVol;ytSetVol(masterVol);});
+  document.getElementById('vol-slider').addEventListener('input',e=>{masterVol=e.target.value/100;if(masterGain)masterGain.gain.value=masterVol;bgmSetVol(masterVol);});
   // ボリューム（ゲーム内）
-  document.getElementById('gvol').addEventListener('input',e=>{masterVol=e.target.value/100;if(masterGain)masterGain.gain.value=masterVol;ytSetVol(masterVol);document.getElementById('vol-slider').value=e.target.value;});
+  document.getElementById('gvol').addEventListener('input',e=>{masterVol=e.target.value/100;if(masterGain)masterGain.gain.value=masterVol;bgmSetVol(masterVol);document.getElementById('vol-slider').value=e.target.value;});
   // スタートボタン → ステージ選択へ
   document.getElementById('start-btn').addEventListener('click',()=>{
     bootAudio();
