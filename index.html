@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=no,viewport-fit=cover">
 <title>ラップバトル！</title>
+<script src="https://www.youtube.com/iframe_api"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;user-select:none;-webkit-tap-highlight-color:transparent;touch-action:manipulation;}
 html,body{width:100%;height:100%;overflow:hidden;background:#1a0a2e;font-family:'Arial Black','Impact',sans-serif;color:#fff;}
@@ -239,6 +240,9 @@ canvas#hw{display:block;width:100%;}
 </head>
 <body>
 
+<!-- YouTube非表示プレイヤー -->
+<div id="yt-player" style="position:fixed;left:-9999px;top:-9999px;width:1px;height:1px;pointer-events:none;"></div>
+
 <!-- スタート画面 -->
 <div id="start" class="screen">
   <div style="font-size:2.8rem">🦊🐼🐰</div>
@@ -368,6 +372,24 @@ canvas#hw{display:block;width:100%;}
 
 <script>
 'use strict';
+// ══════════════════════════════════════════════════
+//  YouTube IFrame API
+// ══════════════════════════════════════════════════
+let ytPlayer=null,ytReady=false;
+const YT_VIDEO_ID='noe9z8baceg'; // そこにあるかも知れない... CR吉宗2
+
+window.onYouTubeIframeAPIReady=function(){
+  ytPlayer=new YT.Player('yt-player',{
+    videoId:YT_VIDEO_ID,
+    playerVars:{autoplay:0,controls:0,disablekb:1,fs:0,iv_load_policy:3,modestbranding:1,rel:0,playsinline:1},
+    events:{onReady:()=>{ytReady=true;ytPlayer.setVolume(Math.round(masterVol*100));}}
+  });
+};
+function ytPlay(){if(ytReady&&ytPlayer){ytPlayer.seekTo(0,true);ytPlayer.setVolume(Math.round(masterVol*100));ytPlayer.playVideo();}}
+function ytStop(){if(ytReady&&ytPlayer)ytPlayer.stopVideo();}
+function ytSetVol(v){if(ytReady&&ytPlayer)ytPlayer.setVolume(Math.round(v*100));}
+function isYtSong(){return curSong().genre==='yoshimune';}
+
 // ══════════════════════════════════════════════════
 //  定数・状態
 // ══════════════════════════════════════════════════
@@ -698,25 +720,31 @@ function scheduleSong(){
   if(!gameActive) return;
   const songNow=actx.currentTime-songStart;
   const AHEAD=0.22;
-  // ドラム
-  while(schedPtr<drumEvts.length&&drumEvts[schedPtr].t<songNow+AHEAD){
-    const ev=drumEvts[schedPtr];const t=songStart+ev.t;
-    if(t<actx.currentTime-.01){schedPtr++;continue;}
-    const wa=curSong().genre==='yoshimune'||curSong().genre==='wajapan';
-    if(ev.kick)    wa?playTaiko(t,true):playKick(t);
-    if(ev.snare)   wa?playTaiko(t,false):playSnare(t);
-    if(ev.hat&&!wa)    playHat(t,false);
-    if(ev.openHat&&!wa)playHat(t,true);
-    if(ev.bass)    playBass(t,ev.bass);
-    if(ev.chord)   playChord(t,ev.chord,.22,.12);
-    if(ev.chord2)  playChord(t,ev.chord2,.16,.1);
-    schedPtr++;
-  }
-  // 三味線メロディ
-  while(melodyPtr<melodyEvts.length&&melodyEvts[melodyPtr].t<songNow+AHEAD){
-    const m=melodyEvts[melodyPtr];const t=songStart+m.t;
-    if(t>=actx.currentTime-.01) playShamisen(t,m.f,.13);
-    melodyPtr++;
+  // ドラム（yoshimune曲はYouTubeが音源なのでWeb Audio合成スキップ）
+  if(!isYtSong()){
+    while(schedPtr<drumEvts.length&&drumEvts[schedPtr].t<songNow+AHEAD){
+      const ev=drumEvts[schedPtr];const t=songStart+ev.t;
+      if(t<actx.currentTime-.01){schedPtr++;continue;}
+      const wa=curSong().genre==='wajapan';
+      if(ev.kick)    wa?playTaiko(t,true):playKick(t);
+      if(ev.snare)   wa?playTaiko(t,false):playSnare(t);
+      if(ev.hat&&!wa)    playHat(t,false);
+      if(ev.openHat&&!wa)playHat(t,true);
+      if(ev.bass)    playBass(t,ev.bass);
+      if(ev.chord)   playChord(t,ev.chord,.22,.12);
+      if(ev.chord2)  playChord(t,ev.chord2,.16,.1);
+      schedPtr++;
+    }
+    // 三味線メロディ
+    while(melodyPtr<melodyEvts.length&&melodyEvts[melodyPtr].t<songNow+AHEAD){
+      const m=melodyEvts[melodyPtr];const t=songStart+m.t;
+      if(t>=actx.currentTime-.01) playShamisen(t,m.f,.13);
+      melodyPtr++;
+    }
+  } else {
+    // yoshimune：ドラム・メロディのスケジュールポインタだけ進める
+    while(schedPtr<drumEvts.length&&drumEvts[schedPtr].t<songNow+AHEAD) schedPtr++;
+    while(melodyPtr<melodyEvts.length&&melodyEvts[melodyPtr].t<songNow+AHEAD) melodyPtr++;
   }
   // 先生ノート自動演奏＋ボタンフラッシュ
   const songT=actx.currentTime-songStart;
@@ -955,6 +983,8 @@ function startGame(){
   lastPhaseIdx=-1;currentPhaseType='intro';schedPtr=0;melodyPtr=0;
   initCanvas();updateRating();
   document.getElementById('gvol').value=masterVol*100;
+  // yoshimune曲はYouTube再生（ユーザー操作直後に呼ぶ必要がある）
+  if(isYtSong()) ytPlay();
   actx.resume().then(()=>{songStart=actx.currentTime+.1;gameActive=true;scheduleSong();requestAnimationFrame(rafLoop);});
 }
 
@@ -1016,6 +1046,7 @@ function countUp(el,target,dur=900){
 
 function endSong(){
   gameActive=false;clearTimeout(schedTimer);
+  if(isYtSong()) ytStop();
   const s=curSong();
   const hitTotal=hits.cool+hits.good+hits.bad;
   const total=notes.filter(n=>!n.isTeacher).length;
@@ -1152,9 +1183,9 @@ document.addEventListener('DOMContentLoaded',()=>{
     b.addEventListener('click',()=>{document.querySelectorAll('.diff-btn').forEach(x=>x.classList.remove('selected'));b.classList.add('selected');currentDiff=b.dataset.diff;});
   });
   // ボリューム（スタート画面）
-  document.getElementById('vol-slider').addEventListener('input',e=>{masterVol=e.target.value/100;if(masterGain)masterGain.gain.value=masterVol;});
+  document.getElementById('vol-slider').addEventListener('input',e=>{masterVol=e.target.value/100;if(masterGain)masterGain.gain.value=masterVol;ytSetVol(masterVol);});
   // ボリューム（ゲーム内）
-  document.getElementById('gvol').addEventListener('input',e=>{masterVol=e.target.value/100;if(masterGain)masterGain.gain.value=masterVol;document.getElementById('vol-slider').value=e.target.value;});
+  document.getElementById('gvol').addEventListener('input',e=>{masterVol=e.target.value/100;if(masterGain)masterGain.gain.value=masterVol;ytSetVol(masterVol);document.getElementById('vol-slider').value=e.target.value;});
   // スタートボタン → ステージ選択へ
   document.getElementById('start-btn').addEventListener('click',()=>{
     bootAudio();
