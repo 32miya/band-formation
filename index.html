@@ -402,7 +402,7 @@ const STAGES = [
   { id:3, name:'エレクトロの殿堂',   teacher:'rhino', emoji:'⚡' },
   { id:4, name:'ロックの要塞',       teacher:'husky', emoji:'🎸' },
   { id:5, name:'吉宗の天守閣',       teacher:'horse', emoji:'🏯' },
-  { id:6, name:'EX パチスロ伝説！',  teacher:'rhino', emoji:'🎰' },
+  { id:6, name:'EX 伝説のリズム殿堂',  teacher:'rhino', emoji:'🎰' },
 ];
 
 // ══════════════════════════════════════════════════
@@ -1131,7 +1131,7 @@ function endSong(){
         clearBtn.textContent=`🌟 ステージ${s.stage}クリア！次のステージへ`;
         clearBtn.classList.remove('hidden');
       } else if(allCleared&&s.stage===6){
-        clearBtn.textContent=`🎊 全ステージ制覇！パチスロ伝説達成！`;
+        clearBtn.textContent=`🎊 全ステージ制覇！伝説のリズム王者！`;
         clearBtn.classList.remove('hidden');
       } else {
         clearBtn.textContent=`🏆 ステージ${s.stage}クリア！`;
